@@ -1641,7 +1641,9 @@ const AIRSPACE_UNIT = { 0: 'm', 1: 'ft', 6: 'FL' };
 /** OpenAIP reference datum: 0=GND, 1=AMSL, 2=STD (standard pressure) */
 const AIRSPACE_REF  = { 0: 'GND', 1: 'AMSL', 2: 'STD' };
 /** OpenAIP ICAO class codes */
-const AIRSPACE_CLASS = { 0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'SUA', 8: 'OTHER' };
+/* Per OpenAIP OpenAPI v1.1: 0-6 = ICAO classes A-G, 7 = reserved (unused),
+ * 8 = Unclassified / Special-Use Airspace (used by FIRs, ADIZs, etc.) */
+const AIRSPACE_CLASS = { 0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: '—', 8: 'U' };
 /** OpenAIP activity codes */
 const AIRSPACE_ACTIVITY = { 0: '—', 1: 'PARA', 2: 'GLD', 3: 'HG/PG', 4: 'BAL', 5: 'TFC', 6: 'MIL' };
 
@@ -1661,9 +1663,9 @@ function fmtAltLimit(lim) {
  *   26 CTA · 27 ACC Sector · 34 LTA · 35 UTA · 36 MCTR */
 function airspaceStyle(t) {
   switch (Number(t)) {
-    case 12: return { color: '#ff6ad5', weight: 2.0, opacity: 0.85, dashArray: '10 4', fillOpacity: 0.05, label: 'ADIZ' };
-    case 10: return { color: '#5fc7ff', weight: 1.5, opacity: 0.6,  dashArray: '8 4',  fillOpacity: 0.02, label: 'FIR' };
-    case 11: return { color: '#5fc7ff', weight: 1.2, opacity: 0.45, dashArray: '8 6',  fillOpacity: 0.01, label: 'UIR' };
+    case 12: return { color: '#ff6ad5', weight: 2.0, opacity: 0.9,  dashArray: '10 4', fillOpacity: 0.05, label: 'ADIZ' };
+    case 10: return { color: '#5fc7ff', weight: 2.0, opacity: 0.85, dashArray: '10 4', fillOpacity: 0.015,label: 'FIR' };
+    case 11: return { color: '#5fc7ff', weight: 1.6, opacity: 0.7,  dashArray: '10 6', fillOpacity: 0.01, label: 'UIR' };
     case 26: return { color: '#b794ff', weight: 1.2, opacity: 0.45, dashArray: '4 3',  fillOpacity: 0.02, label: 'CTA' };
     case 34: return { color: '#b794ff', weight: 1.0, opacity: 0.4,  dashArray: '4 4',  fillOpacity: 0.01, label: 'LTA' };
     case 35: return { color: '#b794ff', weight: 1.0, opacity: 0.4,  dashArray: '4 4',  fillOpacity: 0.01, label: 'UTA' };
