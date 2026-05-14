@@ -2671,6 +2671,37 @@ function etTimeKey(it) {
   return d.toISOString().slice(0, 19);
 }
 
+/** Is the given calendar date in US Eastern Daylight Time?
+ *  EDT runs from 2nd Sunday of March → 1st Sunday of November (US rules). */
+function isEDT(year, month, day) {
+  if (month < 3 || month > 11) return false;
+  if (month > 3 && month < 11) return true;
+  if (month === 3) {
+    const firstDow = new Date(Date.UTC(year, 2, 1)).getUTCDay(); // 0=Sun
+    const secondSunday = 1 + ((7 - firstDow) % 7) + 7;
+    return day >= secondSunday;
+  }
+  // month === 11
+  const firstDow = new Date(Date.UTC(year, 10, 1)).getUTCDay();
+  const firstSunday = 1 + ((7 - firstDow) % 7);
+  return day < firstSunday;
+}
+
+/** Convert an ET wall-clock (date + hour + minute) to a Zulu/UTC string. */
+function etToZulu(dateKey, etHour, etMin) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const offset = isEDT(y, m, d) ? 4 : 5; // UTC = ET + offset
+  const hh = (etHour + offset) % 24;
+  return `${String(hh).padStart(2, '0')}:${String(etMin).padStart(2, '0')}Z`;
+}
+
+/** Add `days` to a YYYY-MM-DD date key. */
+function addDaysKey(dateKey, days) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return dt.toISOString().slice(0, 10);
+}
+
 function parseScheduleParts(it) {
   // Title is "8:00 AM · Description". Split on the first ' · '.
   const t = it.title || '';
@@ -2710,18 +2741,27 @@ function renderPotusCalendar(items) {
 
   const etNow    = getEtClockString();
   const etToday  = etNow.slice(0, 10);
+  // Factbase only publishes WH schedule 2 days ahead — anything further is
+  // tentative or noise. Cap at today + 2.
+  const etMax    = addDaysKey(etToday, 2);
 
-  // Drop past days entirely — at midnight ET, yesterday disappears.
-  // Show TODAY first, then future days in ascending chronological order.
   const keys = Array.from(byDate.keys())
-    .filter((k) => k >= etToday)
+    .filter((k) => k >= etToday && k <= etMax)
     .sort();
 
+  const banner = `
+    <div class="potus-banner">
+      <span class="pb-tag">▮ POTUS SCHEDULE</span>
+      <span class="pb-src">source · Roll Call Factbase CDN ← WH Press Pool</span>
+      <span class="pb-tz">times · <b>ET</b> Washington / <b>Z</b> UTC · window today + 2 days</span>
+    </div>
+  `;
+
   if (!keys.length) {
-    return `<div class="empty">No upcoming POTUS events. Factbase typically publishes a few days ahead — next cron tick in &lt; 10 min.</div>`;
+    return banner + `<div class="empty">No upcoming POTUS events in the next 2 days. Next cron tick in &lt; 10 min.</div>`;
   }
 
-  return keys.map((k) => renderDayBlock(k, byDate.get(k), etToday, etNow)).join('');
+  return banner + keys.map((k) => renderDayBlock(k, byDate.get(k), etToday, etNow)).join('');
 }
 
 function renderDayBlock(dateKey, dayItems, etToday, etNow) {
@@ -2742,8 +2782,13 @@ function renderDayBlock(dateKey, dayItems, etToday, etNow) {
 
   const header = formatDayHeader(dateKey, isToday);
   const rows = sorted.map((it, i) => {
-    const { time, details } = parseScheduleParts(it);
+    const { time: etDisplay, details } = parseScheduleParts(it);
     const meta = (it.summary || '').trim();
+    const d = it.date instanceof Date ? it.date : new Date(it.date);
+    const etHour = d.getUTCHours();   // /api/factbase encoded ET-as-UTC
+    const etMin  = d.getUTCMinutes();
+    const zTime  = etToZulu(dateKey, etHour, etMin);
+
     let cls = 'sched-future';
     let badge = '';
     if (isPast) cls = 'sched-past';
@@ -2752,14 +2797,17 @@ function renderDayBlock(dateKey, dayItems, etToday, etNow) {
       else if (i < activeIdx) cls = 'sched-past';
       else cls = 'sched-future';
     }
-    const dateIso = it.date instanceof Date ? it.date.toISOString() : new Date(it.date).toISOString();
+    const dateIso = d.toISOString();
     return `
       <article class="item sched-item ${cls}"
                data-link="${escapeHtml(it.link)}"
                data-title="${escapeHtml(it.title)}"
                data-source="${escapeHtml(it.source || '')}"
                data-time="${dateIso}">
-        <div class="sched-time">${escapeHtml(time || '—')}</div>
+        <div class="sched-time">
+          <span class="time-et">${escapeHtml(etDisplay || '—')} <i>ET</i></span>
+          <span class="time-z">${zTime}</span>
+        </div>
         <div class="sched-body">
           <div class="sched-detail">${escapeHtml(details)}${badge}</div>
           ${meta ? `<div class="sched-meta">${escapeHtml(meta)}</div>` : ''}

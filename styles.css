@@ -650,6 +650,25 @@ body.fetching .dataflow {
 .tag-health   { color: var(--cyan); }
 
 /* ============= POTUS SCHEDULE (day-grouped calendar) ============= */
+.potus-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: linear-gradient(90deg, rgba(255,170,0,0.08), transparent 70%);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+}
+.pb-tag  { color: var(--amber); font-weight: 700; letter-spacing: 1.4px; }
+.pb-src  { color: var(--cyan);  }
+.pb-tz   { color: var(--dim); margin-left: auto; }
+.pb-tz b { color: var(--amber); font-weight: 700; }
+@media (max-width: 600px) {
+  .pb-tz { margin-left: 0; flex-basis: 100%; }
+}
+
 .day-block { border-bottom: 1px solid var(--border); }
 .day-header {
   background: var(--bg2);
@@ -672,7 +691,7 @@ body.fetching .dataflow {
 
 .sched-item {
   display: grid !important;
-  grid-template-columns: 84px 1fr;
+  grid-template-columns: 100px 1fr;
   gap: 12px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
@@ -683,12 +702,30 @@ body.fetching .dataflow {
 .sched-item:last-child { border-bottom: 0; }
 .sched-item:hover { background: var(--hover); }
 .sched-time {
-  color: var(--dim);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  font-weight: 600;
   white-space: nowrap;
+}
+.sched-time .time-et {
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+.sched-time .time-et i {
+  color: var(--dim2);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 9px;
+  margin-left: 1px;
+}
+.sched-time .time-z {
+  color: var(--cyan);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 .sched-body { min-width: 0; }
 .sched-detail {
@@ -737,8 +774,9 @@ body.fetching .dataflow {
 .sched-item.sched-future .sched-detail { color: var(--white); }
 
 @media (max-width: 520px) {
-  .sched-item { grid-template-columns: 70px 1fr; gap: 8px; padding: 7px 10px; }
-  .sched-time { font-size: 11px; }
+  .sched-item { grid-template-columns: 86px 1fr; gap: 8px; padding: 7px 10px; }
+  .sched-time .time-et { font-size: 11px; }
+  .sched-time .time-z  { font-size: 9.5px; }
   .sched-detail { font-size: 12px; }
 }
 
