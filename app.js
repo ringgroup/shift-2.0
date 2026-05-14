@@ -1801,14 +1801,25 @@ async function fetchAndRenderAirspace() {
           }),
         }).bindTooltip(tooltip, { sticky: true });
 
-        // Hover highlight — pop the polygon visually
+        // Hover highlight — bump weight + opacity ONLY. We deliberately do
+        // NOT bringToFront() because Leaflet has no matching bringToBack()
+        // for the original sort position; calling it would permanently
+        // promote whatever you hover last (e.g. an FIR border) above every
+        // smaller polygon, breaking the z-order rule on subsequent hovers.
         layer.on('mouseover', (e) => {
           const t = e.target || layer;
-          if (t.setStyle) t.setStyle({ weight: style.weight + 1.5, opacity: 0.95, fillOpacity: Math.min(0.18, style.fillOpacity * 4) });
-          if (t.bringToFront) t.bringToFront();
+          if (t.setStyle) t.setStyle({
+            weight: style.weight + 1.5,
+            opacity: 0.95,
+            fillOpacity: Math.min(0.18, style.fillOpacity * 4),
+          });
         });
         layer.on('mouseout', () => {
-          layer.setStyle({ weight: style.weight, opacity: style.opacity, fillOpacity: style.fillOpacity });
+          layer.setStyle({
+            weight: style.weight,
+            opacity: style.opacity,
+            fillOpacity: style.fillOpacity,
+          });
         });
         layer.addTo(airspaceLayer);
       } catch (e) { /* skip malformed */ }
