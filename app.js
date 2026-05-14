@@ -84,6 +84,7 @@ const SOURCES = [
   // ---- Regional MENA / GCC ----
   { id: 'aje',     name: 'Al Jazeera EN',     url: 'https://www.aljazeera.com/xml/rss/all.xml',                region: 'QA',   lang: 'en' },
   { id: 'toi',     name: 'Times of Israel',   url: 'https://www.timesofisrael.com/feed/',                      region: 'IL',   lang: 'en' },
+  { id: 'toi-gn',  name: 'Times of Israel · GN', url: 'https://news.google.com/rss/search?q=site:timesofisrael.com&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'IL', lang: 'en' },
   { id: 'jp',      name: 'Jerusalem Post',    url: 'https://www.jpost.com/rss/rssfeedsfrontpage.aspx',         region: 'IL',   lang: 'en' },
   { id: 'ynet',    name: 'Ynetnews',          url: 'https://www.ynetnews.com/Integration/StoryRss3082.xml',    region: 'IL',   lang: 'en' },
   { id: 'haaretz', name: 'Haaretz EN',        url: 'https://www.haaretz.com/srv/haaretz-latest-headlines',     region: 'IL',   lang: 'en' },
@@ -93,6 +94,7 @@ const SOURCES = [
   { id: 'arutz',   name: 'Israel Nat. News',  url: 'https://news.google.com/rss/search?q=site:israelnationalnews.com&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'IL', lang: 'en' },
   { id: 'tn',      name: 'The National UAE',  url: 'https://www.thenationalnews.com/rss/uae',                  region: 'AE',   lang: 'en' },
   { id: 'tnmena',  name: 'The National MENA', url: 'https://www.thenationalnews.com/rss/mena',                 region: 'AE',   lang: 'en' },
+  { id: 'tn-gn',   name: 'The National · GN', url: 'https://news.google.com/rss/search?q=site:thenationalnews.com&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'AE', lang: 'en' },
   { id: 'an',      name: 'Arab News',         url: 'https://www.arabnews.com/rss.xml',                         region: 'SA',   lang: 'en' },
   { id: 'kt',      name: 'Khaleej Times',     url: 'https://news.google.com/rss/search?q=site:khaleejtimes.com&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'AE', lang: 'en' },
   // Middle East Eye removed — known editorial bias (Qatar-linked funding allegations).
@@ -100,6 +102,7 @@ const SOURCES = [
   // ---- UAE official / state channels (verified May 2026) ----
   { id: 'moi-en',   name: 'UAE MoI (EN)',        url: 'https://moi.gov.ae/en/rss/rss.aspx',                            region: 'AE-MOI', lang: 'en' },
   { id: 'moi-ar',   name: 'UAE MoI (AR)',        url: 'https://moi.gov.ae/ar/rss/rss.aspx',                            region: 'AE-MOI', lang: 'ar' },
+  { id: 'moi-gn',   name: 'UAE MoI · GN',        url: 'https://news.google.com/rss/search?q=site:moi.gov.ae+OR+%22Ministry+of+Interior%22+UAE&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'AE-MOI', lang: 'en' },
   { id: 'dxb-pol',  name: 'Dubai Police YT',     url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCMebk44F_zVLj-7aD_mSUhQ', region: 'AE-POL', lang: 'en' },
   { id: 'ad-pol',   name: 'Abu Dhabi Police YT', url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCLqu78o49yHSQTOUEWh_8Vg', region: 'AE-POL', lang: 'en' },
   { id: 'wam',      name: 'WAM (Emirates News)', url: 'https://news.google.com/rss/search?q=site:wam.ae&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'AE-GOV', lang: 'en' },

@@ -19,7 +19,7 @@ export const config = { runtime: 'edge' };
 
 /* Cheap allowlist guard — only proxy hosts that look like news/RSS sources.
  * Stops the endpoint from being used as a general open proxy. */
-const ALLOW_HOST = /(?:\.com|\.org|\.net|\.gov|\.ae|\.sa|\.il|\.qa|\.bh|\.kw|\.om|\.eg|\.ir|\.lb|\.tr|\.de|\.fr|\.uk|\.us|\.io|\.ai|\.co|\.news|\.tv|\.app|\.dev|\.se|\.eu|\.in|\.jp|\.kr|\.cn|\.sg|\.au|\.ca|\.ru|\.za|\.info)$/i;
+const ALLOW_HOST = /(?:\.com|\.org|\.net|\.gov|\.int|\.mil|\.edu|\.ae|\.sa|\.il|\.qa|\.bh|\.kw|\.om|\.eg|\.ir|\.lb|\.tr|\.de|\.fr|\.uk|\.us|\.io|\.ai|\.co|\.news|\.tv|\.app|\.dev|\.se|\.eu|\.in|\.jp|\.kr|\.cn|\.sg|\.au|\.ca|\.ru|\.za|\.info)$/i;
 
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

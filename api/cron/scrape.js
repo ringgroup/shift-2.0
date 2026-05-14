@@ -51,6 +51,9 @@ const FEED_URLS = [
   // UAE official
   'https://moi.gov.ae/en/rss/rss.aspx',
   'https://moi.gov.ae/ar/rss/rss.aspx',
+  'https://news.google.com/rss/search?q=site:moi.gov.ae+OR+%22Ministry+of+Interior%22+UAE&when:2d&hl=en-US&gl=US&ceid=US:en',
+  'https://news.google.com/rss/search?q=site:timesofisrael.com&when:1d&hl=en-US&gl=US&ceid=US:en',
+  'https://news.google.com/rss/search?q=site:thenationalnews.com&when:1d&hl=en-US&gl=US&ceid=US:en',
   'https://www.youtube.com/feeds/videos.xml?channel_id=UCMebk44F_zVLj-7aD_mSUhQ',
   'https://www.youtube.com/feeds/videos.xml?channel_id=UCLqu78o49yHSQTOUEWh_8Vg',
   // US government
