@@ -1662,13 +1662,18 @@ function fmtAltLimit(lim) {
  *   14 MATZ · 15 Airway · 17 Alert · 18 Warning · 19 Protected Area ·
  *   26 CTA · 27 ACC Sector · 34 LTA · 35 UTA · 36 MCTR */
 function airspaceStyle(t) {
+  // strokeOnly = true → CSS sets pointer-events: stroke so the polygon's
+  // INTERIOR doesn't capture hover. Smaller polygons stacked above can win
+  // the hover for any point inside them. Used for the big context layers
+  // (FIR/UIR/CTA/LTA/UTA) which are mostly there for orientation and
+  // shouldn't outcompete a danger/restricted/CTR for the tooltip.
   switch (Number(t)) {
     case 12: return { color: '#ff6ad5', weight: 2.0, opacity: 0.9,  dashArray: '10 4', fillOpacity: 0.05, label: 'ADIZ' };
-    case 10: return { color: '#5fc7ff', weight: 2.0, opacity: 0.85, dashArray: '10 4', fillOpacity: 0.015,label: 'FIR' };
-    case 11: return { color: '#5fc7ff', weight: 1.6, opacity: 0.7,  dashArray: '10 6', fillOpacity: 0.01, label: 'UIR' };
-    case 26: return { color: '#b794ff', weight: 1.2, opacity: 0.45, dashArray: '4 3',  fillOpacity: 0.02, label: 'CTA' };
-    case 34: return { color: '#b794ff', weight: 1.0, opacity: 0.4,  dashArray: '4 4',  fillOpacity: 0.01, label: 'LTA' };
-    case 35: return { color: '#b794ff', weight: 1.0, opacity: 0.4,  dashArray: '4 4',  fillOpacity: 0.01, label: 'UTA' };
+    case 10: return { color: '#5fc7ff', weight: 2.0, opacity: 0.85, dashArray: '10 4', fillOpacity: 0.015,label: 'FIR',  strokeOnly: true };
+    case 11: return { color: '#5fc7ff', weight: 1.6, opacity: 0.7,  dashArray: '10 6', fillOpacity: 0.01, label: 'UIR',  strokeOnly: true };
+    case 26: return { color: '#b794ff', weight: 1.2, opacity: 0.45, dashArray: '4 3',  fillOpacity: 0.02, label: 'CTA',  strokeOnly: true };
+    case 34: return { color: '#b794ff', weight: 1.0, opacity: 0.4,  dashArray: '4 4',  fillOpacity: 0.01, label: 'LTA',  strokeOnly: true };
+    case 35: return { color: '#b794ff', weight: 1.0, opacity: 0.4,  dashArray: '4 4',  fillOpacity: 0.01, label: 'UTA',  strokeOnly: true };
     case 4:  return { color: '#ffaa00', weight: 1.2, opacity: 0.55, dashArray: '2 3',  fillOpacity: 0.04, label: 'CTR' };
     case 36: return { color: '#ffaa00', weight: 1.2, opacity: 0.55, dashArray: '2 3',  fillOpacity: 0.05, label: 'MCTR' };
     case 7:  return { color: '#ffaa00', weight: 1.0, opacity: 0.45, dashArray: '3 3',  fillOpacity: 0.03, label: 'TMA' };
@@ -1790,6 +1795,9 @@ async function fetchAndRenderAirspace() {
             fillOpacity: style.fillOpacity,
             pane: 'airspacePane',
             interactive: true,
+            // Big context polygons get className 'asp-stroke-only' → CSS sets
+            // pointer-events: stroke so their interior fill is non-hoverable.
+            className: style.strokeOnly ? 'asp-stroke-only' : '',
           }),
         }).bindTooltip(tooltip, { sticky: true });
 

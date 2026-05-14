@@ -1293,6 +1293,12 @@ body.fetching .dataflow {
 .leaflet-tooltip-left:before,
 .leaflet-tooltip-right:before { display: none; }
 
+/* Big context airspace polygons (FIR / UIR / CTA / LTA / UTA): only the
+ * dashed stroke captures hover, not the interior fill. Lets smaller
+ * polygons stacked above (DANGER / RESTR / CTR / etc.) always win the
+ * tooltip when the cursor is inside their bounds. */
+.asp-stroke-only { pointer-events: stroke; }
+
 .choke-marker { background: none !important; border: none !important; }
 .choke-label {
   color: var(--magenta); font-size: 9px; font-weight: 700; letter-spacing: 0.8px;
