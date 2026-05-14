@@ -130,6 +130,7 @@ const SOURCES = [
   { id: 'bbg',       name: 'Bloomberg',       url: 'https://news.google.com/rss/search?q=site:bloomberg.com&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'US', lang: 'en' },
   { id: 'reuters-us',name: 'Reuters US',      url: 'https://news.google.com/rss/search?q=site:reuters.com+(US+OR+Fed+OR+%22White+House%22+OR+Congress)&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'US', lang: 'en' },
   { id: 'ap',        name: 'AP News',         url: 'https://news.google.com/rss/search?q=site:apnews.com&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'US', lang: 'en' },
+  { id: 'axios',     name: 'Axios',           url: 'https://api.axios.com/feed/',                                region: 'US',   lang: 'en' },
   { id: 'sp500',     name: 'S&P 500 / Fed',   url: 'https://news.google.com/rss/search?q=%22S%26P+500%22+OR+%22Federal+Reserve%22+OR+%22Treasury+yield%22&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'MKT',  lang: 'en' },
 
   // ---- Multilateral / Global health ----
