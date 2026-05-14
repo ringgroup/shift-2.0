@@ -361,7 +361,9 @@ const LIVE_CHANNELS = [
   { channelId: 'UCknLrEdhRCp1aegoMqRaCZg', name: 'DW NEWS',          desk: 'BERLIN · DE' },
   { channelId: 'UC7fWeaHhqgM4Ry-RMpM2YYw', name: 'TRT WORLD',        desk: 'ISTANBUL · TR' },
   { channelId: 'UCeY0bbntWzzVIaj2z3QigXg', name: 'NBC NEWS NOW',     desk: 'NEW YORK · US' },
-  { channelId: 'UCSJ4gkVC6NrvII8umztf0Ow', name: 'LOFI GIRL',        desk: 'PARIS · FR · CHILL' },
+  // Lofi Girl uses a stable known video ID (the famous 'beats to study/relax to'
+  // stream) because their channel-live URL surfaces a different stream sometimes.
+  { videoId: 'jfKfPfyJRdk', channelId: 'UCSJ4gkVC6NrvII8umztf0Ow', name: 'LOFI GIRL', desk: 'PARIS · FR · CHILL' },
 ];
 
 const LIVE_AUTO_LOAD = 4;
@@ -2148,16 +2150,23 @@ function renderLive() {
   if (grid.dataset.rendered) return;
   const origin = encodeURIComponent(location.origin);
 
-  // channel-live-stream URL — auto-picks the channel's CURRENT live broadcast.
-  // Avoids stale hardcoded video IDs that rotate every few months.
-  const embedUrl = (channelId) =>
-    `https://www.youtube-nocookie.com/embed/live_stream?channel=${channelId}` +
-    `&autoplay=1&mute=1&playsinline=1&controls=1&enablejsapi=1&rel=0&modestbranding=1&origin=${origin}`;
+  // Two embed modes:
+  //   videoId set    → embed that specific video (stable for streams whose
+  //                    channel-live URL doesn't surface the right one,
+  //                    e.g. Lofi Girl).
+  //   channelId only → channel-live-stream embed (auto-picks current live).
+  const ytParams = `autoplay=1&mute=1&playsinline=1&controls=1&enablejsapi=1&rel=0&modestbranding=1&origin=${origin}`;
+  const embedUrlForCh = (ch) => ch.videoId
+    ? `https://www.youtube-nocookie.com/embed/${ch.videoId}?${ytParams}`
+    : `https://www.youtube-nocookie.com/embed/live_stream?channel=${ch.channelId}&${ytParams}`;
+  const embedUrlForData = (data) => data.video
+    ? `https://www.youtube-nocookie.com/embed/${data.video}?${ytParams}`
+    : `https://www.youtube-nocookie.com/embed/live_stream?channel=${data.channel}&${ytParams}`;
 
   grid.innerHTML = LIVE_CHANNELS.map((ch, i) => {
     const liveNow = i < LIVE_AUTO_LOAD;
     const body = liveNow
-      ? `<iframe src="${embedUrl(ch.channelId)}"
+      ? `<iframe src="${embedUrlForCh(ch)}"
                  allow="autoplay; encrypted-media; picture-in-picture"
                  allowfullscreen loading="lazy"></iframe>
          <div class="lt-mute-overlay">MUTED · CLICK FOR AUDIO</div>`
@@ -2167,7 +2176,8 @@ function renderLive() {
          </div>`;
     return `
       <div class="live-tile"
-           data-channel="${ch.channelId}"
+           data-channel="${ch.channelId || ''}"
+           data-video="${ch.videoId || ''}"
            data-muted="1"
            data-loaded="${liveNow ? '1' : '0'}">
         <div class="lt-head">
@@ -2209,10 +2219,10 @@ function renderLive() {
     }
   };
   const loadTile = (tile) => {
-    const channelId = tile.dataset.channel;
+    const data = { channel: tile.dataset.channel, video: tile.dataset.video };
     const frame = tile.querySelector('.lt-frame');
     frame.innerHTML =
-      `<iframe src="${embedUrl(channelId)}"
+      `<iframe src="${embedUrlForData(data)}"
                allow="autoplay; encrypted-media; picture-in-picture"
                allowfullscreen></iframe>
        <div class="lt-mute-overlay">MUTED · CLICK FOR AUDIO</div>`;
@@ -2701,18 +2711,15 @@ function renderPotusCalendar(items) {
   const etNow    = getEtClockString();
   const etToday  = etNow.slice(0, 10);
 
-  // Order: TODAY first → future ascending → past descending (recent past
-  // before deep past)
-  const keys = Array.from(byDate.keys()).sort((a, b) => {
-    const aT = a === etToday, bT = b === etToday;
-    if (aT && !bT) return -1;
-    if (bT && !aT) return 1;
-    const aF = a > etToday, bF = b > etToday;
-    if (aF && bF) return a.localeCompare(b);
-    if (aF) return -1;
-    if (bF) return 1;
-    return b.localeCompare(a);
-  });
+  // Drop past days entirely — at midnight ET, yesterday disappears.
+  // Show TODAY first, then future days in ascending chronological order.
+  const keys = Array.from(byDate.keys())
+    .filter((k) => k >= etToday)
+    .sort();
+
+  if (!keys.length) {
+    return `<div class="empty">No upcoming POTUS events. Factbase typically publishes a few days ahead — next cron tick in &lt; 10 min.</div>`;
+  }
 
   return keys.map((k) => renderDayBlock(k, byDate.get(k), etToday, etNow)).join('');
 }

@@ -39,8 +39,9 @@ export default async function handler(request) {
       return bd.localeCompare(ad);
     });
 
-    // Build RSS — keep the most recent ~200 entries
-    const rows = items.slice(0, 200).map((it) => {
+    // Build RSS — keep up to 1000 entries (Factbase CDN typically returns
+    // 30-60 days forward; pull everything available so we don't truncate).
+    const rows = items.slice(0, 1000).map((it) => {
       const date = it.date || '';
       const time = it.time || '00:00:00';
       const isoStr = `${date}T${time}Z`;
