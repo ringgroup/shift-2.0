@@ -186,6 +186,19 @@
     </div>
     <div class="map-wrap">
       <div id="world-map" class="map-container"></div>
+      <div class="map-loading" id="map-loading" hidden>
+        <div class="ml-card">
+          <span class="bc-corner tl"></span><span class="bc-corner tr"></span>
+          <span class="bc-corner bl"></span><span class="bc-corner br"></span>
+          <div class="ml-title">▮ MAP LAYERS · INGESTING</div>
+          <div class="ml-bar-track"><div id="ml-bar" class="ml-bar"></div></div>
+          <div class="ml-stats">
+            <span id="ml-pct">000%</span>
+            <span id="ml-status">awaiting feeds…</span>
+          </div>
+          <div id="ml-log" class="ml-log"></div>
+        </div>
+      </div>
       <iframe class="marine-overlay" id="marine-overlay" hidden
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"></iframe>

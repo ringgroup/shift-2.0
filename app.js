@@ -950,10 +950,12 @@ async function fetchAircraft() {
         state.aircraftSource = j.source || 'aircraft';
         cacheSet('aircraft', { at: Date.now(), preset: activePreset, states: state.aircraft });
         updateAircraftCount();
+        markMapLayer('aircraft', true);
         return;
       }
     }
   } catch (e) { console.warn('[aircraft-api]', e.message); }
+  markMapLayer('aircraft', false);
 
   // Last-resort direct fallback
   const { lamin, lamax, lomin, lomax } = (MAP_PRESETS[activePreset] || MAP_PRESETS.uae).bbox;
@@ -1290,12 +1292,23 @@ function initMapOnce() {
   }).addTo(leafletMap);
 
   // ---- Layer panes for explicit z-ordering (per SITAWARE convention) ----
-  // base 200 → overlay 400 → airspace 480 → cables 500 → sigmet 520 →
-  // quakes 540 → tracks 600 → aircraft 650 → HUD 700+
+  // Z-order: smaller / more specific things on TOP.
+  //   480 airspace polygons (sorted big→small within, so small CTRs end
+  //       up visually above the FIR backdrop)
+  //   500 submarine cables
+  //   520 SIGMET polygons
+  //   540 USGS earthquakes (circle markers)
+  //   560 ground stations (airports, navaids, mil bases — smaller markers
+  //       than polygons, so on top)
+  //   580 chokepoints (specific named points, on top of generic stations)
+  //   600 aircraft trails
+  //   650 aircraft markers (always on top)
   leafletMap.createPane('airspacePane').style.zIndex = '480';
   leafletMap.createPane('cablesPane').style.zIndex   = '500';
   leafletMap.createPane('sigmetPane').style.zIndex   = '520';
   leafletMap.createPane('quakesPane').style.zIndex   = '540';
+  leafletMap.createPane('stationPane').style.zIndex  = '560';
+  leafletMap.createPane('chokePane').style.zIndex    = '580';
   leafletMap.createPane('tracksPane').style.zIndex   = '600';
   leafletMap.createPane('aircraftPane').style.zIndex = '650';
 
@@ -1321,6 +1334,7 @@ function initMapOnce() {
       }).addTo(leafletMap);
     });
     L.marker([c.lat, c.lon], {
+      pane: 'chokePane',
       icon: L.divIcon({
         className: 'choke-marker',
         html:
@@ -1359,6 +1373,9 @@ function initMapOnce() {
       ? `${lat.toFixed(2)}° · ${lon.toFixed(2)}° · ${mgrsStr}`
       : `${lat.toFixed(2)}° · ${lon.toFixed(2)}°`;
   });
+
+  // ---- Show loading overlay while layers come in ----
+  showMapLoading();
 
   // ---- Airport + mil-base overlays (rendered once) ----
   renderAirportsAndBases();
@@ -1416,6 +1433,75 @@ function drawEngagementBox() {
 }
 
 /* ============================================================
+ * MAP LAYER LOADING STATE — drives the boot-style overlay that sits over
+ * the map while airspace / airports / navaids / sigmets / quakes / cables
+ * stream in. Battlefield-loading aesthetic matches the global #boot.
+ * ============================================================ */
+const MAP_LAYERS = [
+  { id: 'aircraft', name: 'AIRCRAFT · ADS-B' },
+  { id: 'airspace', name: 'AIRSPACE · OPENAIP' },
+  { id: 'airports', name: 'AIRPORTS · OPENAIP' },
+  { id: 'navaids',  name: 'NAVAIDS · VOR/TACAN' },
+  { id: 'sigmets',  name: 'SIGMETs · NOAA AWC' },
+  { id: 'quakes',   name: 'EARTHQUAKES · USGS' },
+];
+const mapLoadingState = Object.create(null);
+
+function showMapLoading() {
+  const el = document.getElementById('map-loading');
+  if (!el) return;
+  el.hidden = false;
+  el.classList.remove('done');
+  MAP_LAYERS.forEach((l) => mapLoadingState[l.id] = 'wait');
+  // Seed log lines
+  const log = document.getElementById('ml-log');
+  if (log) {
+    log.innerHTML = MAP_LAYERS.map((l) =>
+      `<div class="ml-log-row" data-l="${l.id}">
+        <span class="ml-arrow">▸</span>
+        <span class="ml-name">${l.name}</span>
+        <span class="ml-stat">··</span>
+      </div>`
+    ).join('');
+  }
+  updateMapLoadingUI();
+}
+
+function markMapLayer(id, ok = true) {
+  if (!(id in mapLoadingState)) return;
+  mapLoadingState[id] = ok ? 'ok' : 'err';
+  // Update log row
+  const row = document.querySelector(`.ml-log-row[data-l="${id}"] .ml-stat`);
+  if (row) {
+    row.textContent = ok ? 'OK' : 'ERR';
+    row.className = 'ml-stat ' + (ok ? 'ok' : 'err');
+  }
+  updateMapLoadingUI();
+}
+
+function updateMapLoadingUI() {
+  const done = MAP_LAYERS.filter((l) => mapLoadingState[l.id] !== 'wait').length;
+  const total = MAP_LAYERS.length;
+  const pct = Math.round((done / total) * 100);
+  const pctEl = document.getElementById('ml-pct');
+  const barEl = document.getElementById('ml-bar');
+  const stEl  = document.getElementById('ml-status');
+  if (pctEl) pctEl.textContent = String(pct).padStart(3, '0') + '%';
+  if (barEl) barEl.style.width = pct + '%';
+  if (stEl) {
+    const wait = MAP_LAYERS.filter((l) => mapLoadingState[l.id] === 'wait').map((l) => l.name);
+    stEl.textContent = wait.length ? `loading ${wait.length}/${total}` : 'all layers rendered';
+  }
+  if (done === total) {
+    setTimeout(() => {
+      const el = document.getElementById('map-loading');
+      if (el) el.classList.add('done');
+      setTimeout(() => { if (el) el.hidden = true; }, 600);
+    }, 400);
+  }
+}
+
+/* ============================================================
  * AIRPORT / MIL-BASE LAYERS — rendered once on map init.
  * ============================================================ */
 let civilLayer = null;
@@ -1430,6 +1516,7 @@ function renderAirportsAndBases() {
 
   AIRPORTS_CIVIL.forEach((a) => {
     L.marker([a.lat, a.lon], {
+      pane: 'stationPane',
       icon: L.divIcon({
         className: 'airport-civil',
         html: `<svg viewBox="0 0 14 14" width="12" height="12">` +
@@ -1475,7 +1562,7 @@ function renderAirportsAndBases() {
         iconSize: [12, 12], iconAnchor: [6, 6],
       });
     }
-    L.marker([b.lat, b.lon], { icon })
+    L.marker([b.lat, b.lon], { icon, pane: 'stationPane' })
       .bindTooltip(`<b>${b.code}</b> · MIL · ${b.country}<br>${b.name}<br><span style="color:#5fc7ff">${b.op}</span>`, { sticky: true })
       .addTo(milLayer);
   });
@@ -1632,7 +1719,7 @@ function polygonArea(coords) {
 }
 
 async function fetchAndRenderAirspace() {
-  if (!leafletMap) return;
+  if (!leafletMap) return markMapLayer('airspace', false);
   try {
     // pos+dist filter (OpenAIP has NO bbox param). Gulf center 27,55,
     // 2400km radius covers the full MENA+Iran zone we care about.
@@ -1705,7 +1792,8 @@ async function fetchAndRenderAirspace() {
       } catch (e) { /* skip malformed */ }
     });
     airspaceLayer.addTo(leafletMap);
-  } catch (e) { console.warn('[airspace]', e.message); }
+    markMapLayer('airspace', true);
+  } catch (e) { console.warn('[airspace]', e.message); markMapLayer('airspace', false); }
 }
 
 /* ============================================================
@@ -1744,6 +1832,7 @@ async function fetchAndRenderOpenAipAirports() {
         ? `<svg width="13" height="13" viewBox="0 0 13 13"><path d="M6.5 1 L12 11 L1 11 Z" fill="rgba(255,51,68,0.25)" stroke="#ff3344" stroke-width="1.4"/><circle cx="6.5" cy="8" r="1" fill="#ff3344"/></svg>`
         : `<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="rgba(95,199,255,0.18)" stroke="#5fc7ff" stroke-width="1.2"/><circle cx="6" cy="6" r="1" fill="#5fc7ff"/></svg>`;
       L.marker([lat, lon], {
+        pane: 'stationPane',
         icon: L.divIcon({
           className: isMil ? 'mil-airport' : 'civ-airport',
           html: svg, iconSize: [13, 13], iconAnchor: [6.5, 6.5],
@@ -1751,7 +1840,8 @@ async function fetchAndRenderOpenAipAirports() {
       }).bindTooltip(tooltipLines, { sticky: true }).addTo(openaipAirportLayer);
     });
     openaipAirportLayer.addTo(leafletMap);
-  } catch (e) { console.warn('[openaip-airports]', e.message); }
+    markMapLayer('airports', true);
+  } catch (e) { console.warn('[openaip-airports]', e.message); markMapLayer('airports', false); }
 }
 
 /* ============================================================
@@ -1789,13 +1879,15 @@ async function fetchAndRenderNavaids() {
         `<circle cx="5.5" cy="5.5" r="1" fill="${color}"/>` +
         `</svg>`;
       L.marker([lat, lon], {
+        pane: 'stationPane',
         icon: L.divIcon({
           className: 'navaid', html: svg, iconSize: [11, 11], iconAnchor: [5.5, 5.5],
         }),
       }).bindTooltip(tip, { sticky: true }).addTo(navaidLayer);
     });
     navaidLayer.addTo(leafletMap);
-  } catch (e) { console.warn('[navaids]', e.message); }
+    markMapLayer('navaids', true);
+  } catch (e) { console.warn('[navaids]', e.message); markMapLayer('navaids', false); }
 }
 
 /* ============================================================
@@ -1871,7 +1963,8 @@ async function fetchAndRenderSigmets() {
       ).addTo(sigmetLayer);
     });
     sigmetLayer.addTo(leafletMap);
-  } catch (e) { console.warn('[sigmets]', e.message); }
+    markMapLayer('sigmets', true);
+  } catch (e) { console.warn('[sigmets]', e.message); markMapLayer('sigmets', false); }
 }
 
 /* ============================================================
@@ -1912,7 +2005,8 @@ async function fetchAndRenderQuakes() {
         .addTo(quakeLayer);
     });
     quakeLayer.addTo(leafletMap);
-  } catch (e) { console.warn('[quakes]', e.message); }
+    markMapLayer('quakes', true);
+  } catch (e) { console.warn('[quakes]', e.message); markMapLayer('quakes', false); }
 }
 
 /* ============================================================
