@@ -2605,6 +2605,13 @@ function renderContent() {
         ).join('')}
       </div>
     `;
+    // POTUS sub-tab: render a calendar-grouped view (Factbase schedule)
+    if (subId === 'potus') {
+      c.innerHTML = prefix + renderPotusCalendar(items);
+      state.modalList = items.slice(0, 300);
+      state.focusedIdx = -1;
+      return;
+    }
   } else if (activeTab !== 'all') {
     items = items.filter((i) => i.tags.includes(activeTab));
   }
@@ -2618,6 +2625,148 @@ function renderContent() {
   // Cache the rendered list for keyboard nav + modal next/prev
   state.modalList = items.slice(0, 300);
   state.focusedIdx = -1;
+}
+
+/* ============================================================
+ * POTUS CALENDAR RENDER — Factbase items, grouped by day, with the
+ * currently-active hour highlighted in amber.
+ *
+ * Schedule times come from the WH press pool in Eastern Time. Our
+ * /api/factbase encodes that ET clock into the item's pubDate as if it
+ * were UTC, so it.date.toISOString().slice(0,19) gives an "ET clock"
+ * string we can compare directly against ET-now (built via Intl).
+ * ============================================================ */
+
+/** Current Eastern Time as 'YYYY-MM-DDTHH:MM:SS' (matches the format
+ *  produced by item.date.toISOString().slice(0,19) for Factbase items). */
+function getEtClockString() {
+  try {
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/New_York',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    }).format(new Date()).replace(' ', 'T');
+  } catch {
+    return new Date().toISOString().slice(0, 19);
+  }
+}
+
+function etDateKey(it) {
+  const d = it.date instanceof Date ? it.date : new Date(it.date);
+  return d.toISOString().slice(0, 10);
+}
+function etTimeKey(it) {
+  const d = it.date instanceof Date ? it.date : new Date(it.date);
+  return d.toISOString().slice(0, 19);
+}
+
+function parseScheduleParts(it) {
+  // Title is "8:00 AM · Description". Split on the first ' · '.
+  const t = it.title || '';
+  const sep = t.indexOf(' · ');
+  if (sep > 0) {
+    return { time: t.slice(0, sep).trim(), details: t.slice(sep + 3).trim() };
+  }
+  return { time: '', details: t };
+}
+
+function formatDayHeader(dateKey, isToday) {
+  // dateKey is 'YYYY-MM-DD' in ET. Parse, format as "WED · MAY 14, 2026"
+  let label = dateKey;
+  try {
+    // Treat as a calendar date (no TZ shenanigans)
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const dow = dt.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }).toUpperCase();
+    const mon = dt.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+    label = `${dow} · ${mon} ${d}, ${y}`;
+  } catch {}
+  return isToday ? `TODAY · ${label}` : label;
+}
+
+function renderPotusCalendar(items) {
+  if (!items || !items.length) {
+    return `<div class="empty">Loading POTUS schedule from Factbase CDN… (next scrape in &lt; 10 min)</div>`;
+  }
+
+  // Group by ET date
+  const byDate = new Map();
+  for (const it of items) {
+    const k = etDateKey(it);
+    if (!byDate.has(k)) byDate.set(k, []);
+    byDate.get(k).push(it);
+  }
+
+  const etNow    = getEtClockString();
+  const etToday  = etNow.slice(0, 10);
+
+  // Order: TODAY first → future ascending → past descending (recent past
+  // before deep past)
+  const keys = Array.from(byDate.keys()).sort((a, b) => {
+    const aT = a === etToday, bT = b === etToday;
+    if (aT && !bT) return -1;
+    if (bT && !aT) return 1;
+    const aF = a > etToday, bF = b > etToday;
+    if (aF && bF) return a.localeCompare(b);
+    if (aF) return -1;
+    if (bF) return 1;
+    return b.localeCompare(a);
+  });
+
+  return keys.map((k) => renderDayBlock(k, byDate.get(k), etToday, etNow)).join('');
+}
+
+function renderDayBlock(dateKey, dayItems, etToday, etNow) {
+  // Sort within day ascending by full ET datetime
+  const sorted = dayItems.slice().sort((a, b) => etTimeKey(a).localeCompare(etTimeKey(b)));
+
+  const isToday = dateKey === etToday;
+  const isPast  = dateKey  <  etToday;
+  const isFuture= dateKey  >  etToday;
+
+  // Find the active item for TODAY: latest one whose time is <= now
+  let activeIdx = -1;
+  if (isToday) {
+    for (let i = 0; i < sorted.length; i++) {
+      if (etTimeKey(sorted[i]) <= etNow) activeIdx = i; else break;
+    }
+  }
+
+  const header = formatDayHeader(dateKey, isToday);
+  const rows = sorted.map((it, i) => {
+    const { time, details } = parseScheduleParts(it);
+    const meta = (it.summary || '').trim();
+    let cls = 'sched-future';
+    let badge = '';
+    if (isPast) cls = 'sched-past';
+    else if (isToday) {
+      if (i === activeIdx) { cls = 'sched-now'; badge = '<span class="sched-now-badge">◀ NOW</span>'; }
+      else if (i < activeIdx) cls = 'sched-past';
+      else cls = 'sched-future';
+    }
+    const dateIso = it.date instanceof Date ? it.date.toISOString() : new Date(it.date).toISOString();
+    return `
+      <article class="item sched-item ${cls}"
+               data-link="${escapeHtml(it.link)}"
+               data-title="${escapeHtml(it.title)}"
+               data-source="${escapeHtml(it.source || '')}"
+               data-time="${dateIso}">
+        <div class="sched-time">${escapeHtml(time || '—')}</div>
+        <div class="sched-body">
+          <div class="sched-detail">${escapeHtml(details)}${badge}</div>
+          ${meta ? `<div class="sched-meta">${escapeHtml(meta)}</div>` : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  return `
+    <div class="day-block${isToday ? ' day-today' : ''}${isPast ? ' day-past' : ''}">
+      <div class="day-header">${escapeHtml(header)}</div>
+      ${rows}
+    </div>
+  `;
 }
 
 function renderItem(it) {
