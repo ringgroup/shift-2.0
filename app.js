@@ -1577,8 +1577,8 @@ function renderAirportsAndBases() {
  * ============================================================ */
 const trackHistory = new Map(); // icao -> [{lat, lon, t}, ...]
 const trackLines   = new Map(); // icao -> L.Polyline
-const TRACK_MAX_PTS = 40;
-const TRACK_KEEP_MS = 30 * 60_000; // 30 min
+const TRACK_MAX_PTS = 120;       // 120 pts × ~3s/tick = ~6 min of trail
+const TRACK_KEEP_MS = 30 * 60_000;
 
 function pushTrackPoint(icao, lat, lon) {
   let arr = trackHistory.get(icao);
@@ -1602,9 +1602,13 @@ function renderTrackFor(icao, color) {
     line.setStyle({ color });
   } else {
     line = L.polyline(latlngs, {
-      color, weight: 1.4, opacity: 0.55,
+      color,
+      weight: 1.8,
+      opacity: 0.7,
       interactive: false,
       pane: 'tracksPane',
+      lineCap: 'round',
+      lineJoin: 'round',
     });
     line.addTo(leafletMap);
     trackLines.set(icao, line);
@@ -2018,10 +2022,13 @@ let planeTickTimer = null;
 const DEG_PER_RAD = Math.PI / 180;
 const M_PER_DEG_LAT = 111_111;
 
+let _planeTickCount = 0;
 function tickPlanes() {
   if (activeTab !== 'map' || !leafletMap) return;
   const dt = 1; // seconds per tick
-  for (const m of planeMarkers.values()) {
+  _planeTickCount++;
+  const trailEvery = 3; // push to trail every 3 ticks (≈ every 3 sec)
+  for (const [icao, m] of planeMarkers) {
     const s = m._dr;
     if (!s || !s.vel || s.vel < 25) continue; // skip ground / slow tracks
     const distM = s.vel * dt;
@@ -2032,6 +2039,13 @@ function tickPlanes() {
     s.lat += dLat;
     s.lon += dLon;
     m.setLatLng([s.lat, s.lon]);
+    // Push the interpolated position to track history so the trail actually
+    // grows between real ADS-B fetches (otherwise we'd only see a 2-point
+    // line every 90s — invisible at typical zoom levels).
+    if (_planeTickCount % trailEvery === 0) {
+      pushTrackPoint(icao, s.lat, s.lon);
+      renderTrackFor(icao, m._trailColor || '#ffaa00');
+    }
   }
 }
 
@@ -2147,6 +2161,7 @@ function renderAircraft() {
       else if (s[7] > 3048) trackColor = '#5fc7ff';
       else                  trackColor = '#ff3344';
     }
+    m._trailColor = trackColor;
     renderTrackFor(icao, trackColor);
   }
 
