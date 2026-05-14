@@ -1292,28 +1292,35 @@ function initMapOnce() {
   }).addTo(leafletMap);
 
   // ---- Layer panes for explicit z-ordering (per SITAWARE convention) ----
-  // Z-order: smaller / more specific things on TOP.
-  //   480 airspace polygons (sorted big→small within, so small CTRs end
-  //       up visually above the FIR backdrop)
-  //   500 submarine cables
-  //   520 SIGMET polygons
-  //   540 USGS earthquakes (circle markers)
-  //   560 ground stations (airports, navaids, mil bases — smaller markers
-  //       than polygons, so on top)
-  //   580 chokepoints (specific named points, on top of generic stations)
-  //   600 aircraft trails
-  //   650 aircraft markers (always on top)
-  leafletMap.createPane('airspacePane').style.zIndex = '480';
-  leafletMap.createPane('cablesPane').style.zIndex   = '500';
-  leafletMap.createPane('sigmetPane').style.zIndex   = '520';
-  leafletMap.createPane('quakesPane').style.zIndex   = '540';
-  leafletMap.createPane('stationPane').style.zIndex  = '560';
-  leafletMap.createPane('chokePane').style.zIndex    = '580';
-  leafletMap.createPane('tracksPane').style.zIndex   = '600';
-  leafletMap.createPane('aircraftPane').style.zIndex = '650';
+  // Global z-order rule: smaller / more specific things on TOP.
+  // Everything that draws on the map gets an explicit pane so the rule
+  // holds regardless of insertion order.
+  //
+  //   300  graticule         lat/lon grid (faintest, just above tiles)
+  //   400  engagement box    OpenSky/AirLabs query bbox outline
+  //   480  airspace          polygons, sorted big→small internally
+  //   500  cables            submarine cable polylines
+  //   520  SIGMETs           weather hazard polygons
+  //   540  range rings       chokepoint nm rings (large circles)
+  //   555  earthquakes       USGS circle markers
+  //   570  stations          airports, navaids, mil bases
+  //   590  chokepoints       named-point markers
+  //   620  aircraft trails
+  //   650  aircraft markers  always on top
+  leafletMap.createPane('graticulePane').style.zIndex = '300';
+  leafletMap.createPane('engagePane').style.zIndex    = '400';
+  leafletMap.createPane('airspacePane').style.zIndex  = '480';
+  leafletMap.createPane('cablesPane').style.zIndex    = '500';
+  leafletMap.createPane('sigmetPane').style.zIndex    = '520';
+  leafletMap.createPane('ringsPane').style.zIndex     = '540';
+  leafletMap.createPane('quakesPane').style.zIndex    = '555';
+  leafletMap.createPane('stationPane').style.zIndex   = '570';
+  leafletMap.createPane('chokePane').style.zIndex     = '590';
+  leafletMap.createPane('tracksPane').style.zIndex    = '620';
+  leafletMap.createPane('aircraftPane').style.zIndex  = '650';
 
   // ---- Graticule (lat/lon lines every 10°, faint) ----
-  const gratStyle = { color: '#252525', weight: 0.6, opacity: 0.8, interactive: false };
+  const gratStyle = { color: '#252525', weight: 0.6, opacity: 0.8, interactive: false, pane: 'graticulePane' };
   for (let lat = -60; lat <= 80; lat += 10) L.polyline([[lat, -180], [lat, 180]], gratStyle).addTo(leafletMap);
   for (let lon = -180; lon <= 180; lon += 10) L.polyline([[-60, lon], [80, lon]], gratStyle).addTo(leafletMap);
 
@@ -1331,6 +1338,7 @@ function initMapOnce() {
         fillOpacity: 0,
         dashArray: '4 5',
         interactive: false,
+        pane: 'ringsPane',
       }).addTo(leafletMap);
     });
     L.marker([c.lat, c.lon], {
@@ -1427,7 +1435,7 @@ function drawEngagementBox() {
   const b = (MAP_PRESETS[activePreset] || MAP_PRESETS.mena).bbox;
   engagementBoxLayer = L.rectangle(
     [[b.lamin, b.lomin], [b.lamax, b.lomax]],
-    { color: '#5fc7ff', weight: 1, opacity: 0.45, fillOpacity: 0, dashArray: '8 6', interactive: false }
+    { color: '#5fc7ff', weight: 1, opacity: 0.45, fillOpacity: 0, dashArray: '8 6', interactive: false, pane: 'engagePane' }
   ).addTo(leafletMap);
   const bb = $('#hud-bbox'); if (bb) bb.textContent = `${b.lamin}/${b.lamax}N · ${b.lomin}/${b.lomax}E`;
 }
@@ -1438,12 +1446,12 @@ function drawEngagementBox() {
  * stream in. Battlefield-loading aesthetic matches the global #boot.
  * ============================================================ */
 const MAP_LAYERS = [
-  { id: 'aircraft', name: 'AIRCRAFT · ADS-B' },
-  { id: 'airspace', name: 'AIRSPACE · OPENAIP' },
-  { id: 'airports', name: 'AIRPORTS · OPENAIP' },
-  { id: 'navaids',  name: 'NAVAIDS · VOR/TACAN' },
-  { id: 'sigmets',  name: 'SIGMETs · NOAA AWC' },
-  { id: 'quakes',   name: 'EARTHQUAKES · USGS' },
+  { id: 'aircraft', name: 'AIRCRAFT TRACKS' },
+  { id: 'airspace', name: 'AIRSPACE / FIR' },
+  { id: 'airports', name: 'AIRPORT NETWORK' },
+  { id: 'navaids',  name: 'NAV BEACONS' },
+  { id: 'sigmets',  name: 'WX HAZARDS' },
+  { id: 'quakes',   name: 'SEISMIC EVENTS' },
 ];
 const mapLoadingState = Object.create(null);
 
