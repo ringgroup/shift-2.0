@@ -330,9 +330,13 @@
         </div>
       </div>
 
-      <div class="kronos-explainer">
-        <div class="kex-h">HOW KRONOS WORKS</div>
-        <div class="kex-grid">
+      <div class="kronos-explainer" id="kronos-explainer">
+        <button class="kex-h kex-toggle" id="kex-toggle" type="button" aria-expanded="false" aria-controls="kex-grid">
+          <span class="kex-chev" aria-hidden="true">▶</span>
+          <span class="kex-label">HOW KRONOS WORKS</span>
+          <span class="kex-hint">click to expand</span>
+        </button>
+        <div class="kex-grid" id="kex-grid" hidden>
           <div class="kex-step">
             <div class="kex-step-n">01</div>
             <div class="kex-step-h">TOKENIZE</div>

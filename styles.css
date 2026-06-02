@@ -1989,6 +1989,61 @@ kbd {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
+/* Make the header a clickable toggle */
+.kex-toggle {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 0 8px 0;
+  margin: 0 0 12px 0;
+  color: var(--amber);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Menlo', monospace;
+}
+.kex-toggle:hover { color: #fff; }
+.kex-toggle .kex-chev {
+  display: inline-block;
+  color: var(--amber-dim);
+  font-size: 9px;
+  transition: transform 120ms ease;
+}
+.kex-toggle[aria-expanded="true"] .kex-chev { transform: rotate(90deg); color: var(--amber); }
+.kex-toggle .kex-hint {
+  margin-left: auto;
+  color: var(--dim2);
+  font-weight: 500;
+  font-size: 9.5px;
+  letter-spacing: 0.4px;
+  text-transform: lowercase;
+}
+.kex-toggle[aria-expanded="true"] .kex-hint::after { content: ''; }
+.kex-toggle[aria-expanded="true"] .kex-hint {
+  /* Swap hint label on expand */
+  visibility: hidden;
+  position: relative;
+}
+.kex-toggle[aria-expanded="true"] .kex-hint::before {
+  content: 'click to collapse';
+  visibility: visible;
+  position: absolute;
+  right: 0;
+}
+/* Collapsed: tighten the container so it reads as a single row */
+#kronos-explainer:has(#kex-grid[hidden]) {
+  padding-bottom: 14px;
+}
+#kronos-explainer:has(#kex-grid[hidden]) .kex-toggle {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
 .kex-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

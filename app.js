@@ -2479,6 +2479,19 @@ async function renderKronos() {
       if (activeTab === 'kronos') paintKronos();
     }, KRONOS_REFRESH_MS);
   }
+
+  // Bind the collapsible "HOW KRONOS WORKS" toggle once
+  const toggle = document.getElementById('kex-toggle');
+  const grid   = document.getElementById('kex-grid');
+  if (toggle && grid && !toggle.dataset.bound) {
+    toggle.addEventListener('click', () => {
+      const open = grid.hidden;          // currently hidden → about to open
+      grid.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+    });
+    toggle.dataset.bound = '1';
+  }
+
   await paintKronos();
 }
 
