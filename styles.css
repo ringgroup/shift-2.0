@@ -1891,6 +1891,64 @@ kbd {
   height: auto;
   background: #fff;
 }
+.kronos-explainer {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+}
+.kex-h {
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.kex-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.kex-step {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--amber-dim);
+  padding: 10px 12px;
+}
+.kex-step-n {
+  color: var(--amber-dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  margin-bottom: 2px;
+}
+.kex-step-h {
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  margin-bottom: 6px;
+}
+.kex-step-d {
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.kex-step-d b { color: #fff; font-weight: 600; }
+.kex-caveat {
+  border-left-color: var(--red);
+}
+.kex-caveat .kex-step-n,
+.kex-caveat .kex-step-h {
+  color: var(--red);
+}
+@media (max-width: 720px) {
+  .kex-grid { grid-template-columns: 1fr; }
+}
+
 .kronos-foot {
   display: flex; flex-wrap: wrap; gap: 8px;
   color: var(--dim2);

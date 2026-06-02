@@ -301,6 +301,71 @@
           <img id="kronos-chart-img" alt="Kronos BTC/USDT forecast chart" />
         </div>
       </div>
+
+      <div class="kronos-explainer">
+        <div class="kex-h">HOW KRONOS WORKS</div>
+        <div class="kex-grid">
+          <div class="kex-step">
+            <div class="kex-step-n">01</div>
+            <div class="kex-step-h">TOKENIZE</div>
+            <div class="kex-step-d">
+              A learned tokenizer quantizes continuous OHLCV candles (open / high / low /
+              close / volume) into a discrete vocabulary — the same trick that turns text
+              into tokens for an LLM, applied to market bars.
+            </div>
+          </div>
+          <div class="kex-step">
+            <div class="kex-step-n">02</div>
+            <div class="kex-step-h">PRE-TRAIN</div>
+            <div class="kex-step-d">
+              An autoregressive Transformer is trained on <b>12 billion K-line records</b>
+              from 45 global exchanges to predict the next token given prior context.
+              The same architecture as GPT-style language models, with K-lines instead
+              of words.
+            </div>
+          </div>
+          <div class="kex-step">
+            <div class="kex-step-n">03</div>
+            <div class="kex-step-h">CONTEXT</div>
+            <div class="kex-step-d">
+              At inference, the model is fed the most-recent <b>360 hours (~15 days)</b>
+              of BTC/USDT 1h candles from Binance as its context window. From there it
+              forecasts the next 24 tokens — one per upcoming hour.
+            </div>
+          </div>
+          <div class="kex-step">
+            <div class="kex-step-n">04</div>
+            <div class="kex-step-h">MONTE CARLO</div>
+            <div class="kex-step-d">
+              The transformer outputs a probability distribution at each step. Sampling
+              <b>N = 30 independent paths</b> instead of taking the argmax gives a fan
+              of possible futures — the shaded band is the full spread; the orange line
+              is the mean.
+            </div>
+          </div>
+          <div class="kex-step">
+            <div class="kex-step-n">05</div>
+            <div class="kex-step-h">DERIVE METRICS</div>
+            <div class="kex-step-d">
+              <b>Upside Prob</b> = fraction of the 30 paths whose 24h-ahead close exceeds
+              the last known price.<br/>
+              <b>Vol Amp</b> = fraction whose realised 24h volatility exceeds recent
+              historical volatility.
+            </div>
+          </div>
+          <div class="kex-step kex-caveat">
+            <div class="kex-step-n">⚠</div>
+            <div class="kex-step-h">CAVEATS</div>
+            <div class="kex-step-d">
+              Regime shifts (macro shocks, halts, exchange outages) aren't in the
+              training distribution. Autoregressive error compounds at longer horizons.
+              K-line abstraction discards order-book microstructure. <b>Not financial
+              advice — a model output, not a market view.</b>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="kronos-foot">
         <span>Source:</span>
         <a href="https://shiyu-coder.github.io/Kronos-demo/" target="_blank" rel="noopener">shiyu-coder.github.io/Kronos-demo</a>
