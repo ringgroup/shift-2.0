@@ -59,11 +59,14 @@ const FEED_URLS = [
   'https://www.youtube.com/feeds/videos.xml?channel_id=UCLqu78o49yHSQTOUEWh_8Vg',
   // US government
   'https://www.whitehouse.gov/feed/',
-  'https://www.state.gov/feed/',
+  'https://news.google.com/rss/search?q=site:state.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20',
-  'https://www.energy.gov/rss/articles.xml',
+  'https://www.energy.gov/rss.xml',
+  'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://www.justice.gov/feeds/justice-news.xml',
-  'https://home.treasury.gov/news/press-releases/feed',
+  'https://news.google.com/rss/search?q=site:justice.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
+  'https://news.google.com/rss/search?q=site:home.treasury.gov+OR+site:treasury.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
+  'https://news.google.com/rss/search?q=%22OFAC%22+OR+%22Office+of+Foreign+Assets+Control%22+sanctions+OR+designation&when:3d&hl=en-US&gl=US&ceid=US:en',
   'https://www.senate.gov/legislative/LIS/roll_call_lists/votes_new.xml',
   'https://rollcall.com/feed/',
 ];

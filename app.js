@@ -148,15 +148,15 @@ const SOURCES = [
   { id: 'fb-news',   name: 'Factbase via news',         url: 'https://news.google.com/rss/search?q=site:rollcall.com/factbase+OR+site:factba.se&when:3d&hl=en-US&gl=US&ceid=US:en',                     region: 'US-GOV', lang: 'en' },
   { id: 'potus-sch', name: 'POTUS Schedule (news)',     url: 'https://news.google.com/rss/search?q=%22Trump+schedule%22+OR+%22White+House+schedule%22+OR+%22President%27s+schedule%22&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
   { id: 'politico',  name: 'Politico Playbook',         url: 'https://news.google.com/rss/search?q=site:politico.com+%22Playbook%22&when:1d&hl=en-US&gl=US&ceid=US:en',                                  region: 'US-GOV', lang: 'en' },
-  { id: 'dos',       name: 'DoS State Dept',  url: 'https://www.state.gov/feed/',                                                                                                                    region: 'US-GOV', lang: 'en' },
+  { id: 'dos',       name: 'DoS State Dept',  url: 'https://news.google.com/rss/search?q=site:state.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'dos-pr',    name: 'DoS press',       url: 'https://news.google.com/rss/search?q=site:state.gov+press+OR+release&when:2d&hl=en-US&gl=US&ceid=US:en',                                          region: 'US-GOV', lang: 'en' },
   { id: 'dow',       name: 'DoW War Dept',    url: 'https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20',                                                            region: 'US-GOV', lang: 'en' },
-  { id: 'doe',       name: 'DoE Energy',      url: 'https://www.energy.gov/rss/articles.xml',                                                                                                        region: 'US-GOV', lang: 'en' },
+  { id: 'doe',       name: 'DoE Energy',      url: 'https://www.energy.gov/rss.xml',                                                                                                                  region: 'US-GOV', lang: 'en' },
   { id: 'doe-news',  name: 'DoE via news',    url: 'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'doj',       name: 'DoJ Justice',     url: 'https://www.justice.gov/feeds/justice-news.xml',                                                                                                  region: 'US-GOV', lang: 'en' },
   { id: 'doj-news',  name: 'DoJ via news',    url: 'https://news.google.com/rss/search?q=site:justice.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
-  { id: 'treasury',  name: 'Treasury',        url: 'https://home.treasury.gov/news/press-releases/feed',                                                                                              region: 'US-GOV', lang: 'en' },
-  { id: 'treas-news',name: 'Treasury via news',url: 'https://news.google.com/rss/search?q=site:treasury.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                        region: 'US-GOV', lang: 'en' },
+  { id: 'treasury',  name: 'Treasury',        url: 'https://news.google.com/rss/search?q=site:home.treasury.gov+OR+site:treasury.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                              region: 'US-GOV', lang: 'en' },
+  { id: 'treas-news',name: 'Treasury via news',url: 'https://news.google.com/rss/search?q=%22US+Treasury%22+OR+%22Treasury+Department%22+OR+%22Secretary+of+the+Treasury%22&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
   { id: 'ofac',      name: 'OFAC sanctions',  url: 'https://news.google.com/rss/search?q=%22OFAC%22+OR+%22Office+of+Foreign+Assets+Control%22+sanctions+OR+designation&when:3d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
   { id: 'senate-rc', name: 'Senate Roll Call',url: 'https://www.senate.gov/legislative/LIS/roll_call_lists/votes_new.xml',                                                                            region: 'US-GOV', lang: 'en' },
   { id: 'house-rc',  name: 'House Roll Call', url: 'https://news.google.com/rss/search?q=%22roll+call%22+%22House+of+Representatives%22+vote&when:1d&hl=en-US&gl=US&ceid=US:en',                       region: 'US-GOV', lang: 'en' },
@@ -2384,6 +2384,24 @@ function renderLive() {
     });
     setMuted(tile, !wasMuted);
   });
+
+  /* ---- 6-hour iframe refresh ----
+   * Channels rotate their live broadcasts (a stream ends, a new one starts).
+   * The iframe will sit on the dead/ended video forever. Every 6 hours, walk
+   * every loaded tile and re-mount its iframe so we pick up the current live
+   * URL. Skips the tile the user is actively listening to (audio on) to avoid
+   * interrupting them — silent muted tiles refresh transparently. */
+  const LIVE_REFRESH_MS = 6 * 60 * 60 * 1000;
+  setInterval(() => {
+    grid.querySelectorAll('.live-tile').forEach((tile) => {
+      if (tile.dataset.loaded !== '1') return;
+      if (tile.dataset.muted === '0') return; // active audio — don't disturb
+      const iframe = tile.querySelector('iframe');
+      if (!iframe) return;
+      const data = { channel: tile.dataset.channel, video: tile.dataset.video };
+      iframe.src = embedUrlForData(data); // forces fresh fetch of the live URL
+    });
+  }, LIVE_REFRESH_MS);
 }
 
 /* ============================================================
