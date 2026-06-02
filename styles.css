@@ -1830,6 +1830,90 @@ kbd {
 .km-row { display: flex; gap: 6px; align-items: baseline; }
 .km-k { color: var(--dim2); font-weight: 700; font-size: 9.5px; letter-spacing: 0.8px; }
 .km-v { color: var(--amber); font-weight: 700; }
+/* ---- Big trade-bias card ---- */
+.kronos-signal {
+  position: relative;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.kronos-signal[data-dir="long"]    { border-left-color: var(--green); }
+.kronos-signal[data-dir="short"]   { border-left-color: var(--red);   }
+.kronos-signal[data-dir="neutral"] { border-left-color: var(--amber-dim); }
+.ks-l, .ks-r {
+  display: flex; flex-direction: column; gap: 8px;
+  min-width: 0;
+}
+.ks-h {
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+}
+.ks-dir {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  line-height: 1;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  text-shadow: 0 0 18px currentColor;
+}
+.kronos-signal[data-dir="long"]    .ks-dir { color: var(--green); }
+.kronos-signal[data-dir="short"]   .ks-dir { color: var(--red);   }
+.kronos-signal[data-dir="neutral"] .ks-dir { color: var(--amber-dim); text-shadow: none; }
+.ks-conv {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline;
+  font-size: 11px;
+}
+.ks-conv-k { color: var(--dim2); font-weight: 700; letter-spacing: 0.8px; }
+.ks-conv-v { color: var(--amber); font-weight: 700; letter-spacing: 0.5px; }
+.ks-flag {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 4px 8px;
+  background: rgba(255, 51, 68, 0.08);
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.ks-ref {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.ks-ref-row { display: flex; justify-content: space-between; gap: 6px; }
+.ks-ref-k { color: var(--dim2); font-weight: 700; font-size: 9.5px; letter-spacing: 0.8px; }
+.ks-ref-v { color: var(--amber); font-weight: 700; font-family: 'Roboto Mono', 'Courier New', monospace; }
+.ks-rationale {
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.55;
+}
+.ks-disc {
+  grid-column: 1 / -1;
+  color: var(--dim2);
+  font-size: 9.5px;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+}
+@media (max-width: 720px) {
+  .kronos-signal { grid-template-columns: 1fr; }
+  .ks-dir { font-size: 38px; }
+}
+
 .kronos-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;

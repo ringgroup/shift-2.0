@@ -282,6 +282,34 @@
         <span class="km-row"><span class="km-k">MODEL</span><span class="km-v" id="kronos-model">Kronos-mini · MC N=30</span></span>
         <span class="km-row"><span class="km-k">UPDATED</span><span class="km-v" id="kronos-updated">awaiting feed…</span></span>
       </div>
+      <div class="kronos-signal" id="kronos-signal" data-dir="neutral">
+        <div class="ks-l">
+          <div class="ks-h">DERIVED TRADE BIAS · 24h</div>
+          <div class="ks-dir" id="ks-direction">—</div>
+          <div class="ks-conv">
+            <span class="ks-conv-k">CONVICTION</span>
+            <span class="ks-conv-v" id="ks-conviction">—</span>
+            <span class="ks-conv-k">SIZE</span>
+            <span class="ks-conv-v" id="ks-size">—</span>
+          </div>
+          <div class="ks-flag" id="ks-flag" hidden>⚠ ELEVATED VOLATILITY — widen stops or scale size down</div>
+        </div>
+        <div class="ks-r">
+          <div class="ks-ref">
+            <div class="ks-ref-row"><span class="ks-ref-k">BTC SPOT</span><span class="ks-ref-v" id="ks-spot">—</span></div>
+            <div class="ks-ref-row"><span class="ks-ref-k">24h CHG</span><span class="ks-ref-v" id="ks-chg">—</span></div>
+            <div class="ks-ref-row"><span class="ks-ref-k">EDGE</span><span class="ks-ref-v" id="ks-edge">—</span></div>
+            <div class="ks-ref-row"><span class="ks-ref-k">VOL REGIME</span><span class="ks-ref-v" id="ks-vol-regime">—</span></div>
+          </div>
+          <div class="ks-rationale" id="ks-rationale">awaiting feed…</div>
+        </div>
+        <div class="ks-disc">
+          Signal is a deterministic function of Kronos outputs (upside-prob, vol-amp) + current BTC spot.
+          It is NOT financial advice. Model is research-grade (4M params, MC N=30, 1h bars). Crypto is volatile;
+          do not size positions based solely on this card.
+        </div>
+      </div>
+
       <div class="kronos-cards">
         <div class="k-card">
           <div class="k-card-h">UPSIDE PROBABILITY · 24h</div>

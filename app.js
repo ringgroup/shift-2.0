@@ -2482,6 +2482,106 @@ async function renderKronos() {
   await paintKronos();
 }
 
+/**
+ * Translate Kronos's two raw probabilities into a single actionable bias.
+ *
+ * The mapping is deterministic and intentionally conservative — we never
+ * upgrade conviction above what the edge supports, and we explicitly
+ * penalise high vol-amp because the model can be directionally right
+ * about a 24h close while the path getting there is a wipe-out.
+ *
+ *   edge = |upside - 50|        — distance from coin-flip
+ *
+ *   tier  edge        meaning
+ *    3    ≥ 25  →     STRONG     (upside ≥ 75 % or ≤ 25 %)
+ *    2    ≥ 15  →     MODERATE
+ *    1    ≥ 8   →     WEAK
+ *    0    <  8  →     FLAT (no trade)
+ *
+ *   vol-amp ≥ 85  → tier downgraded by one (explosive regime).
+ *   vol-amp ≥ 70  → emit a risk flag (don't downgrade, just warn).
+ */
+function deriveKronosSignal(upsidePct, volAmpPct) {
+  const u = Number(String(upsidePct).replace('%', '')) || 50;
+  const v = Number(String(volAmpPct).replace('%', '')) || 50;
+  const edge = Math.abs(u - 50);
+
+  let tier;
+  if      (edge >= 25) tier = 3;
+  else if (edge >= 15) tier = 2;
+  else if (edge >= 8)  tier = 1;
+  else                 tier = 0;
+
+  if (v >= 85) tier = Math.max(0, tier - 1);
+
+  const baseDir = u >= 50 ? 'LONG' : 'SHORT';
+  const direction  = tier === 0 ? 'NEUTRAL' : baseDir;
+  const conviction = ['FLAT', 'WEAK', 'MODERATE', 'STRONG'][tier];
+  const size       = ['PASS', '¼ SIZE', '½ SIZE', 'FULL'][tier];
+  const riskFlag   = v >= 70;
+
+  // Vol regime descriptor
+  let volRegime;
+  if      (v >= 85) volRegime = 'EXPLOSIVE';
+  else if (v >= 65) volRegime = 'ELEVATED';
+  else if (v >= 40) volRegime = 'NORMAL';
+  else              volRegime = 'COMPRESSED';
+
+  // Human-readable rationale
+  let rationale;
+  if (tier === 0) {
+    rationale = `Edge (${edge.toFixed(0)} pts) is too thin to justify a directional bet. Stand aside.`;
+  } else if (v >= 85) {
+    rationale = `Model is ${conviction.toLowerCase()}ly ${baseDir.toLowerCase()} (${u.toFixed(1)} % upside) but vol-amp ${v.toFixed(0)} % flags explosive 24h tape — size cut one tier, widen stops, expect path to chop hard.`;
+  } else if (v >= 70) {
+    rationale = `${conviction} ${baseDir.toLowerCase()} bias (${u.toFixed(1)} % upside). Vol regime elevated — execute with discipline; don't add into adverse moves.`;
+  } else {
+    rationale = `${conviction} ${baseDir.toLowerCase()} bias (${u.toFixed(1)} % upside) with ${volRegime.toLowerCase()} vol regime — a clean setup if you take it.`;
+  }
+
+  return { direction, conviction, size, riskFlag, edge, volRegime, rationale };
+}
+
+function paintKronosSignal(data) {
+  const card = document.getElementById('kronos-signal');
+  if (!card) return;
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = v; };
+
+  const sig = deriveKronosSignal(data.upsidePct, data.volAmpPct);
+
+  card.dataset.dir = sig.direction.toLowerCase();
+  set('ks-direction',  sig.direction);
+  set('ks-conviction', sig.conviction);
+  set('ks-size',       sig.size);
+  set('ks-edge',       `${sig.edge.toFixed(1)} pts`);
+  set('ks-vol-regime', sig.volRegime);
+  set('ks-rationale',  sig.rationale);
+
+  const flag = document.getElementById('ks-flag');
+  if (flag) flag.hidden = !sig.riskFlag;
+
+  // BTC spot price + 24h change from the existing CoinGecko fetcher.
+  // If state.crypto isn't hydrated yet, kick off a fetch and re-paint when it lands.
+  const btc = state.crypto?.bitcoin;
+  if (btc?.usd != null) {
+    const fmtPrice = btc.usd >= 1000
+      ? `$${btc.usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+      : `$${btc.usd.toFixed(2)}`;
+    set('ks-spot', fmtPrice);
+    const chg = Number(btc.usd_24h_change);
+    if (!Number.isNaN(chg)) {
+      const arrow = chg >= 0 ? '▲' : '▼';
+      set('ks-chg', `${arrow} ${chg.toFixed(2)} %`);
+      const chgEl = document.getElementById('ks-chg');
+      if (chgEl) chgEl.style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+  } else if (typeof fetchCrypto === 'function') {
+    // Lazy-fire and re-paint once. Don't await — we want the signal card
+    // to render the Kronos half immediately.
+    fetchCrypto().then(() => paintKronosSignal(data));
+  }
+}
+
 async function paintKronos() {
   const data = await fetchKronos();
   if (!data || !data.ok) {
@@ -2497,6 +2597,8 @@ async function paintKronos() {
   setText('kronos-upside',  data.upsidePct || '— %');
   setText('kronos-vol',     data.volAmpPct || '— %');
   setText('kronos-sub',     `BTC/USDT · 1h · Binance · MIT — model: ${data.model || 'Kronos'}`);
+
+  paintKronosSignal(data);
 
   const img = document.getElementById('kronos-chart-img');
   if (img && data.chartUrl) {
