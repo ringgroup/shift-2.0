@@ -554,6 +554,23 @@ function parseRSS(xmlText, source) {
 
     const date = dateRaw ? new Date(dateRaw) : new Date();
 
+    /* ---- noise filters ----
+     *
+     * (1) FUTURE-DATED items > 72h ahead are dropped. The DoJ feed
+     *     interleaves calendar events ("FY26 Q4 Data Due", FOIA
+     *     trainings) months in advance — those sort to the top of
+     *     the news deck and starve everything else. 72h is wide
+     *     enough to keep the legitimate forward-looking source
+     *     (POTUS schedule via /api/factbase, which encodes ET clock
+     *     as UTC and publishes up to 2 days ahead).
+     *
+     * (2) DoJ event paths. Even within the 72h window, /event/ and
+     *     /oip/event/ URLs are calendar items, not press releases.
+     */
+    const drift = date.getTime() - Date.now();
+    if (drift > 72 * 3600 * 1000) return;
+    if (source.id === 'doj' && /\/(?:event|oip\/event)\//i.test(link)) return;
+
     items.push({
       id: source.id + ':' + (link || title),
       title,
