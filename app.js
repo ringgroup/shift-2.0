@@ -177,6 +177,12 @@ const SOURCES = [
   { id: 'senate-rc', name: 'Senate Roll Call',url: 'https://www.senate.gov/legislative/LIS/roll_call_lists/votes_new.xml',                                                                            region: 'US-GOV', lang: 'en' },
   { id: 'house-rc',  name: 'House Roll Call', url: 'https://news.google.com/rss/search?q=%22roll+call%22+%22House+of+Representatives%22+vote&when:1d&hl=en-US&gl=US&ceid=US:en',                       region: 'US-GOV', lang: 'en' },
 
+  // ---- INBOX — inbound-email pipeline ----
+  // intel@ringlabs.dev → Cloudflare Email Worker → /api/inbox (Upstash) → RSS
+  // See /cloudflare/README.md for setup. Subscribe to any newsletter / mailing
+  // list with that address; items show up here once the worker is wired.
+  { id: 'inbox',     name: 'Inbox',          url: '/api/inbox',                                                  region: 'INBOX', lang: 'en' },
+
   // ---- Defense / geopolitics analysis ----
   { id: 'diplomat',  name: 'The Diplomat',    url: 'https://thediplomat.com/feed/',                              region: 'ANALYSIS', lang: 'en' },
   { id: 'stratfor',  name: 'Stratfor',        url: 'https://news.google.com/rss/search?q=site:stratfor.com&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'ANALYSIS', lang: 'en' },

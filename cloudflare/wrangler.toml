@@ -1,0 +1,8 @@
+name = "shift-inbox-worker"
+main = "email-worker.js"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# INGEST_URL and INGEST_SECRET are set as secrets, not vars:
+#   wrangler secret put INGEST_URL    # https://shift-2-0.vercel.app/api/inbox
+#   wrangler secret put INGEST_SECRET # match INBOX_SECRET in Vercel
