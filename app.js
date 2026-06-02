@@ -155,9 +155,19 @@ const SOURCES = [
   { id: 'doe-news',  name: 'DoE via news',    url: 'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'doj',       name: 'DoJ Justice',     url: 'https://www.justice.gov/feeds/justice-news.xml',                                                                                                  region: 'US-GOV', lang: 'en' },
   { id: 'doj-news',  name: 'DoJ via news',    url: 'https://news.google.com/rss/search?q=site:justice.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
-  { id: 'treasury',  name: 'Treasury',        url: 'https://news.google.com/rss/search?q=site:home.treasury.gov+OR+site:treasury.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                              region: 'US-GOV', lang: 'en' },
-  { id: 'treas-news',name: 'Treasury via news',url: 'https://news.google.com/rss/search?q=%22US+Treasury%22+OR+%22Treasury+Department%22+OR+%22Secretary+of+the+Treasury%22&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
-  { id: 'ofac',      name: 'OFAC sanctions',  url: 'https://news.google.com/rss/search?q=%22OFAC%22+OR+%22Office+of+Foreign+Assets+Control%22+sanctions+OR+designation&when:3d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
+  // Treasury — GovDelivery (the mailing list backend) exposes per-topic RSS.
+  // First-party, faster + more authoritative than wire-service pickups.
+  { id: 'treasury',     name: 'Treasury Press',  url: 'https://public.govdelivery.com/topics/USTREAS_49/feed.rss',                                                                                       region: 'US-GOV', lang: 'en' },
+  { id: 'treas-news',   name: 'Treasury via news',url: 'https://news.google.com/rss/search?q=%22US+Treasury%22+OR+%22Treasury+Department%22+OR+%22Secretary+of+the+Treasury%22&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
+  { id: 'ofac',         name: 'OFAC sanctions',  url: 'https://news.google.com/rss/search?q=%22OFAC%22+OR+%22Office+of+Foreign+Assets+Control%22+sanctions+OR+designation&when:3d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
+  // First-party Treasury sanctions program feeds (USTREAS GovDelivery topics).
+  // High signal for MENA — these are the SDN designations & general licenses.
+  { id: 'ofac-iran',    name: 'OFAC · Iran',      url: 'https://public.govdelivery.com/topics/USTREAS_120/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
+  { id: 'ofac-iraq',    name: 'OFAC · Iraq',      url: 'https://public.govdelivery.com/topics/USTREAS_121/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
+  { id: 'ofac-syria',   name: 'OFAC · Syria',     url: 'https://public.govdelivery.com/topics/USTREAS_125/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
+  { id: 'ofac-lebanon', name: 'OFAC · Lebanon',   url: 'https://public.govdelivery.com/topics/USTREAS_128/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
+  { id: 'ofac-nk',      name: 'OFAC · DPRK',      url: 'https://public.govdelivery.com/topics/USTREAS_123/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
+  { id: 'ofac-sudan',   name: 'OFAC · Sudan',     url: 'https://public.govdelivery.com/topics/USTREAS_124/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
   { id: 'senate-rc', name: 'Senate Roll Call',url: 'https://www.senate.gov/legislative/LIS/roll_call_lists/votes_new.xml',                                                                            region: 'US-GOV', lang: 'en' },
   { id: 'house-rc',  name: 'House Roll Call', url: 'https://news.google.com/rss/search?q=%22roll+call%22+%22House+of+Representatives%22+vote&when:1d&hl=en-US&gl=US&ceid=US:en',                       region: 'US-GOV', lang: 'en' },
 
@@ -2615,6 +2625,7 @@ const US_GOV_SOURCE_IDS = new Set([
   'doe', 'doe-news',
   'doj', 'doj-news',
   'treasury', 'treas-news', 'ofac',
+  'ofac-iran', 'ofac-iraq', 'ofac-syria', 'ofac-lebanon', 'ofac-nk', 'ofac-sudan',
   'senate-rc', 'house-rc',
 ]);
 
@@ -2628,7 +2639,7 @@ const US_GOV_SUBTABS = [
   { id: 'war',      label: 'DOW',       sources: ['dow'] },
   { id: 'energy',   label: 'DOE',       sources: ['doe', 'doe-news'] },
   { id: 'justice',  label: 'DOJ',       sources: ['doj', 'doj-news'] },
-  { id: 'treasury', label: 'TREASURY',  sources: ['treasury', 'treas-news', 'ofac'] },
+  { id: 'treasury', label: 'TREASURY',  sources: ['treasury', 'treas-news', 'ofac', 'ofac-iran', 'ofac-iraq', 'ofac-syria', 'ofac-lebanon', 'ofac-nk', 'ofac-sudan'] },
   { id: 'all',      label: 'ALL',       sources: null },
 ];
 function isUsGovItem(it) {

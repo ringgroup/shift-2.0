@@ -65,8 +65,15 @@ const FEED_URLS = [
   'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://www.justice.gov/feeds/justice-news.xml',
   'https://news.google.com/rss/search?q=site:justice.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
-  'https://news.google.com/rss/search?q=site:home.treasury.gov+OR+site:treasury.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://news.google.com/rss/search?q=%22OFAC%22+OR+%22Office+of+Foreign+Assets+Control%22+sanctions+OR+designation&when:3d&hl=en-US&gl=US&ceid=US:en',
+  // Treasury GovDelivery — press releases + per-country sanctions programs
+  'https://public.govdelivery.com/topics/USTREAS_49/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_120/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_121/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_125/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_128/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_123/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_124/feed.rss',
   'https://www.senate.gov/legislative/LIS/roll_call_lists/votes_new.xml',
   'https://rollcall.com/feed/',
 ];
