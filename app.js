@@ -2427,6 +2427,68 @@ function renderLive() {
 }
 
 /* ============================================================
+ * KRONOS — probabilistic BTC/USDT forecast (server-side scrape of
+ * shiyu-coder.github.io/Kronos-demo, parsed into native cards).
+ * ============================================================ */
+const KRONOS_REFRESH_MS = 10 * 60 * 1000; // 10min — upstream is hourly
+let _kronosTimer = null;
+let _kronosInflight = null;
+
+async function fetchKronos() {
+  if (_kronosInflight) return _kronosInflight;
+  _kronosInflight = (async () => {
+    try {
+      const r = await fetchTimeout('/api/kronos', { cache: 'no-store' }, 10000);
+      if (!r.ok) throw new Error(`status ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      console.warn('[kronos]', e?.message || e);
+      return null;
+    } finally {
+      _kronosInflight = null;
+    }
+  })();
+  return _kronosInflight;
+}
+
+async function renderKronos() {
+  const view = document.getElementById('kronos-view');
+  if (!view) return;
+
+  // First call: kick off a refresh interval that fires while the tab is open
+  if (!_kronosTimer) {
+    _kronosTimer = setInterval(() => {
+      // Only refresh if KRONOS is still the active tab — saves bandwidth
+      if (activeTab === 'kronos') paintKronos();
+    }, KRONOS_REFRESH_MS);
+  }
+  await paintKronos();
+}
+
+async function paintKronos() {
+  const data = await fetchKronos();
+  if (!data || !data.ok) {
+    const sub = document.getElementById('kronos-sub');
+    if (sub) sub.textContent = 'upstream unreachable — retrying…';
+    return;
+  }
+  const setText = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = v; };
+  setText('kronos-symbol',  data.symbol);
+  setText('kronos-horizon', data.horizon);
+  setText('kronos-model',   data.model);
+  setText('kronos-updated', data.updatedAt ? `${data.updatedAt} UTC` : '—');
+  setText('kronos-upside',  data.upsidePct || '— %');
+  setText('kronos-vol',     data.volAmpPct || '— %');
+  setText('kronos-sub',     `BTC/USDT · 1h · Binance · MIT — model: ${data.model || 'Kronos'}`);
+
+  const img = document.getElementById('kronos-chart-img');
+  if (img && data.chartUrl) {
+    // Cache-bust on each refresh so we always pick up a regenerated chart
+    img.src = `${data.chartUrl}&t=${Date.now()}`;
+  }
+}
+
+/* ============================================================
  * SEARCH — Perplexity-style retrieval. Cached news + fresh GDELT.
  * No LLM. Citations only.
  * ============================================================ */
@@ -2612,8 +2674,8 @@ function moveFocus(delta) {
 /* ============================================================
  * KEYBOARD SHORTCUTS
  * ============================================================ */
-const TAB_ORDER = ['all','security','politics','economy','ai','markets','tensions','sources','us-gov','uae-gov','marine','live','map'];
-const TAB_LETTERS = { a: 'all', s: 'security', p: 'politics', e: 'economy', i: 'ai', m: 'markets', t: 'tensions', w: 'us-gov', u: 'uae-gov', n: 'marine', l: 'live', v: 'map' };
+const TAB_ORDER = ['all','security','politics','economy','ai','markets','tensions','sources','us-gov','uae-gov','marine','live','map','kronos'];
+const TAB_LETTERS = { a: 'all', s: 'security', p: 'politics', e: 'economy', i: 'ai', m: 'markets', t: 'tensions', w: 'us-gov', u: 'uae-gov', n: 'marine', l: 'live', v: 'map', o: 'kronos' };
 
 /* Sources that belong to the UAE GOV tab (also matched by region prefix 'AE-') */
 const UAE_GOV_SOURCE_IDS = new Set([
@@ -2748,23 +2810,24 @@ function renderContent() {
   const c = $('#content');
   const mv = $('#map-view');
   const lv = $('#live-view');
+  const kv = document.getElementById('kronos-view');
 
   const marineView = document.getElementById('marine-view');
 
   if (activeTab === 'map') {
-    c.hidden = true; lv.hidden = true; if (marineView) marineView.hidden = true; mv.hidden = false;
+    c.hidden = true; lv.hidden = true; if (kv) kv.hidden = true; if (marineView) marineView.hidden = true; mv.hidden = false;
     initMapOnce();
     setTimeout(() => { try { leafletMap?.invalidateSize(true); } catch {} }, 60);
     setTimeout(() => { try { leafletMap?.invalidateSize(true); } catch {} }, 300);
     return;
   }
   if (activeTab === 'live') {
-    c.hidden = true; mv.hidden = true; if (marineView) marineView.hidden = true; lv.hidden = false;
+    c.hidden = true; mv.hidden = true; if (kv) kv.hidden = true; if (marineView) marineView.hidden = true; lv.hidden = false;
     renderLive();
     return;
   }
   if (activeTab === 'marine') {
-    c.hidden = true; mv.hidden = true; lv.hidden = true; if (marineView) marineView.hidden = false;
+    c.hidden = true; mv.hidden = true; lv.hidden = true; if (kv) kv.hidden = true; if (marineView) marineView.hidden = false;
     const frame = document.getElementById('marine-tab-frame');
     if (frame && !frame.dataset.loaded) {
       frame.src = 'https://www.marinetraffic.com/en/ais/embed/zoom:7/centery:25.5/centerx:55.5/maptype:1/shownames:false/mmsi:0/shipid:0/fleet:/fleet_id:0/vtypes:/showmenu:false/remember:false';
@@ -2772,7 +2835,12 @@ function renderContent() {
     }
     return;
   }
-  mv.hidden = true; lv.hidden = true; if (marineView) marineView.hidden = true; c.hidden = false;
+  if (activeTab === 'kronos') {
+    c.hidden = true; mv.hidden = true; lv.hidden = true; if (marineView) marineView.hidden = true; if (kv) kv.hidden = false;
+    renderKronos();
+    return;
+  }
+  mv.hidden = true; lv.hidden = true; if (kv) kv.hidden = true; if (marineView) marineView.hidden = true; c.hidden = false;
 
   if (state.searchActive) { renderSearch(); return; }
 

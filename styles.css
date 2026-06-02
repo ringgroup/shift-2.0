@@ -1810,6 +1810,105 @@ kbd {
   word-break: break-word;
 }
 
+/* ============= KRONOS — PROBABILISTIC FORECAST ============= */
+.kronos-view { padding: 0; }
+.kronos-wrap {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg);
+}
+.kronos-meta {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  font-size: 10.5px;
+  letter-spacing: 0.4px;
+}
+.km-row { display: flex; gap: 6px; align-items: baseline; }
+.km-k { color: var(--dim2); font-weight: 700; font-size: 9.5px; letter-spacing: 0.8px; }
+.km-v { color: var(--amber); font-weight: 700; }
+.kronos-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.k-card {
+  position: relative;
+  background: var(--bg2);
+  border: 1px solid var(--amber-soft);
+  padding: 14px 16px;
+}
+.k-card-h {
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  margin-bottom: 8px;
+}
+.k-card-v {
+  color: var(--amber);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  text-shadow: 0 0 12px rgba(255, 170, 0, 0.25);
+  margin-bottom: 6px;
+}
+.k-card-d {
+  color: var(--dim);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+.kronos-chart {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+.kc-h {
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  margin-bottom: 4px;
+}
+.kc-d {
+  color: var(--dim);
+  font-size: 10.5px;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.kc-img-wrap {
+  background: #fff;       /* the chart png has a white background — frame it */
+  border: 1px solid var(--border);
+  padding: 6px;
+}
+#kronos-chart-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #fff;
+}
+.kronos-foot {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  color: var(--dim2);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  padding: 4px 2px 0;
+}
+.kronos-foot a {
+  color: var(--amber-dim);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--amber-soft);
+}
+.kronos-foot a:hover { color: var(--amber); }
+@media (max-width: 720px) {
+  .kronos-cards { grid-template-columns: 1fr; }
+  .k-card-v { font-size: 30px; }
+}
+
 /* Scrollbars (desktop) */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }

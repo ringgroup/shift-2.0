@@ -86,6 +86,7 @@
           <kbd>n</kbd><span>MARINE</span>
           <kbd>l</kbd><span>LIVE</span>
           <kbd>v</kbd><span>MAP</span>
+          <kbd>o</kbd><span>KRONOS</span>
           <kbd>j</kbd>/<kbd>↓</kbd><span>next article</span>
           <kbd>k</kbd>/<kbd>↑</kbd><span>previous article</span>
           <kbd>↵</kbd><span>open article card</span>
@@ -172,6 +173,7 @@
     <button class="tab" data-tab="marine">MARINE</button>
     <button class="tab" data-tab="live">LIVE</button>
     <button class="tab" data-tab="map">MAP</button>
+    <button class="tab" data-tab="kronos">KRONOS</button>
   </nav>
 </header>
 
@@ -267,6 +269,48 @@
     </div>
     <div class="live-grid" id="live-grid"></div>
   </section>
+
+  <section class="kronos-view" id="kronos-view" hidden>
+    <div class="section-head">
+      KRONOS — PROBABILISTIC FORECAST · BTC/USDT
+      <span class="sub" id="kronos-sub">open-source foundation model · MIT</span>
+    </div>
+    <div class="kronos-wrap">
+      <div class="kronos-meta">
+        <span class="km-row"><span class="km-k">SYMBOL</span><span class="km-v" id="kronos-symbol">BTC/USDT</span></span>
+        <span class="km-row"><span class="km-k">HORIZON</span><span class="km-v" id="kronos-horizon">24h</span></span>
+        <span class="km-row"><span class="km-k">MODEL</span><span class="km-v" id="kronos-model">Kronos-mini · MC N=30</span></span>
+        <span class="km-row"><span class="km-k">UPDATED</span><span class="km-v" id="kronos-updated">awaiting feed…</span></span>
+      </div>
+      <div class="kronos-cards">
+        <div class="k-card">
+          <div class="k-card-h">UPSIDE PROBABILITY · 24h</div>
+          <div class="k-card-v" id="kronos-upside">— %</div>
+          <div class="k-card-d">Model confidence that price in 24h is higher than now.</div>
+        </div>
+        <div class="k-card">
+          <div class="k-card-h">VOLATILITY AMPLIFICATION · 24h</div>
+          <div class="k-card-v" id="kronos-vol">— %</div>
+          <div class="k-card-d">Probability that next-24h vol exceeds recent historical vol.</div>
+        </div>
+      </div>
+      <div class="kronos-chart">
+        <div class="kc-h">24-HOUR PROBABILISTIC FORECAST</div>
+        <div class="kc-d">Blue: historical · Orange: mean of Monte Carlo paths · Shaded: full range of predicted outcomes.</div>
+        <div class="kc-img-wrap">
+          <img id="kronos-chart-img" alt="Kronos BTC/USDT forecast chart" />
+        </div>
+      </div>
+      <div class="kronos-foot">
+        <span>Source:</span>
+        <a href="https://shiyu-coder.github.io/Kronos-demo/" target="_blank" rel="noopener">shiyu-coder.github.io/Kronos-demo</a>
+        <span>·</span>
+        <a href="https://github.com/shiyu-coder/Kronos" target="_blank" rel="noopener">github.com/shiyu-coder/Kronos</a>
+        <span>·</span>
+        <a href="https://arxiv.org/abs/2508.02739" target="_blank" rel="noopener">paper</a>
+      </div>
+    </div>
+  </section>
 </main>
 
 <div class="modal-backdrop" id="modal" hidden>
@@ -295,7 +339,7 @@
       <tr><td><kbd>Enter</kbd></td><td>retrieve from feeds + GDELT</td></tr>
       <tr><td><kbd>r</kbd></td><td>refresh all feeds</td></tr>
       <tr><td><kbd>1</kbd>…<kbd>9</kbd></td><td>switch tabs in order</td></tr>
-      <tr><td><kbd>a</kbd> <kbd>s</kbd> <kbd>p</kbd> <kbd>e</kbd> <kbd>i</kbd> <kbd>m</kbd> <kbd>t</kbd> <kbd>w</kbd> <kbd>u</kbd> <kbd>n</kbd> <kbd>l</kbd> <kbd>v</kbd></td><td>all/sec/pol/econ/ai/mkts/tens/US-gov/UAE-gov/marine/live/map</td></tr>
+      <tr><td><kbd>a</kbd> <kbd>s</kbd> <kbd>p</kbd> <kbd>e</kbd> <kbd>i</kbd> <kbd>m</kbd> <kbd>t</kbd> <kbd>w</kbd> <kbd>u</kbd> <kbd>n</kbd> <kbd>l</kbd> <kbd>v</kbd> <kbd>o</kbd></td><td>all/sec/pol/econ/ai/mkts/tens/US-gov/UAE-gov/marine/live/map/kronos</td></tr>
       <tr><td><kbd>j</kbd> / <kbd>↓</kbd></td><td>next article</td></tr>
       <tr><td><kbd>k</kbd> / <kbd>↑</kbd></td><td>previous article</td></tr>
       <tr><td><kbd>Enter</kbd></td><td>open card</td></tr>
