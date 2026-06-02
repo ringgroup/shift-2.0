@@ -162,6 +162,12 @@ const SOURCES = [
   { id: 'ofac',         name: 'OFAC sanctions',  url: 'https://news.google.com/rss/search?q=%22OFAC%22+OR+%22Office+of+Foreign+Assets+Control%22+sanctions+OR+designation&when:3d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
   // First-party Treasury sanctions program feeds (USTREAS GovDelivery topics).
   // High signal for MENA — these are the SDN designations & general licenses.
+  // SDN List master feed — every OFAC designation (Venezuela, Russia, Cuba,
+  // counter-terrorism, counter-narcotics, ICC, etc.) lands here. Per-country
+  // feeds below are convenient slices; USTREAS_89 is the complete picture.
+  { id: 'ofac-sdn',     name: 'OFAC · SDN List',  url: 'https://public.govdelivery.com/topics/USTREAS_89/feed.rss',                                                                                       region: 'US-GOV', lang: 'en' },
+  { id: 'ofac-terror',  name: 'OFAC · Terrorism', url: 'https://public.govdelivery.com/topics/USTREAS_94/feed.rss',                                                                                       region: 'US-GOV', lang: 'en' },
+  { id: 'ofac-nonprolif',name:'OFAC · Non-Prolif',url: 'https://public.govdelivery.com/topics/USTREAS_91/feed.rss',                                                                                       region: 'US-GOV', lang: 'en' },
   { id: 'ofac-iran',    name: 'OFAC · Iran',      url: 'https://public.govdelivery.com/topics/USTREAS_120/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
   { id: 'ofac-iraq',    name: 'OFAC · Iraq',      url: 'https://public.govdelivery.com/topics/USTREAS_121/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
   { id: 'ofac-syria',   name: 'OFAC · Syria',     url: 'https://public.govdelivery.com/topics/USTREAS_125/feed.rss',                                                                                      region: 'US-GOV', lang: 'en' },
@@ -2625,6 +2631,7 @@ const US_GOV_SOURCE_IDS = new Set([
   'doe', 'doe-news',
   'doj', 'doj-news',
   'treasury', 'treas-news', 'ofac',
+  'ofac-sdn', 'ofac-terror', 'ofac-nonprolif',
   'ofac-iran', 'ofac-iraq', 'ofac-syria', 'ofac-lebanon', 'ofac-nk', 'ofac-sudan',
   'senate-rc', 'house-rc',
 ]);
@@ -2639,7 +2646,7 @@ const US_GOV_SUBTABS = [
   { id: 'war',      label: 'DOW',       sources: ['dow'] },
   { id: 'energy',   label: 'DOE',       sources: ['doe', 'doe-news'] },
   { id: 'justice',  label: 'DOJ',       sources: ['doj', 'doj-news'] },
-  { id: 'treasury', label: 'TREASURY',  sources: ['treasury', 'treas-news', 'ofac', 'ofac-iran', 'ofac-iraq', 'ofac-syria', 'ofac-lebanon', 'ofac-nk', 'ofac-sudan'] },
+  { id: 'treasury', label: 'TREASURY',  sources: ['treasury', 'treas-news', 'ofac', 'ofac-sdn', 'ofac-terror', 'ofac-nonprolif', 'ofac-iran', 'ofac-iraq', 'ofac-syria', 'ofac-lebanon', 'ofac-nk', 'ofac-sudan'] },
   { id: 'all',      label: 'ALL',       sources: null },
 ];
 function isUsGovItem(it) {

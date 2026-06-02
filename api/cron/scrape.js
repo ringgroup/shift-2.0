@@ -66,8 +66,11 @@ const FEED_URLS = [
   'https://www.justice.gov/feeds/justice-news.xml',
   'https://news.google.com/rss/search?q=site:justice.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://news.google.com/rss/search?q=%22OFAC%22+OR+%22Office+of+Foreign+Assets+Control%22+sanctions+OR+designation&when:3d&hl=en-US&gl=US&ceid=US:en',
-  // Treasury GovDelivery — press releases + per-country sanctions programs
+  // Treasury GovDelivery — press releases + master SDN + per-country programs
   'https://public.govdelivery.com/topics/USTREAS_49/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_89/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_94/feed.rss',
+  'https://public.govdelivery.com/topics/USTREAS_91/feed.rss',
   'https://public.govdelivery.com/topics/USTREAS_120/feed.rss',
   'https://public.govdelivery.com/topics/USTREAS_121/feed.rss',
   'https://public.govdelivery.com/topics/USTREAS_125/feed.rss',
