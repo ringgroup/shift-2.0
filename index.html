@@ -282,31 +282,81 @@
         <span class="km-row"><span class="km-k">MODEL</span><span class="km-v" id="kronos-model">Kronos-mini · MC N=30</span></span>
         <span class="km-row"><span class="km-k">UPDATED</span><span class="km-v" id="kronos-updated">awaiting feed…</span></span>
       </div>
-      <div class="kronos-signal" id="kronos-signal" data-dir="neutral">
-        <div class="ks-l">
-          <div class="ks-h">DERIVED TRADE BIAS · 24h</div>
-          <div class="ks-dir" id="ks-direction">—</div>
-          <div class="ks-conv">
-            <span class="ks-conv-k">CONVICTION</span>
-            <span class="ks-conv-v" id="ks-conviction">—</span>
-            <span class="ks-conv-k">SIZE</span>
-            <span class="ks-conv-v" id="ks-size">—</span>
+      <div class="kronos-signal" id="kronos-signal" data-action="hold">
+        <div class="ks-action-row">
+          <div class="ks-action" id="ks-action">—</div>
+          <div class="ks-action-meta">
+            <div class="ks-action-h">DAY-TRADE SIGNAL · ENTER NOW · EXIT IN 24h</div>
+            <div class="ks-action-sub">
+              <span><span class="k">CONVICTION</span><span class="v" id="ks-conviction">—</span></span>
+              <span><span class="k">SIZE</span><span class="v" id="ks-size">—</span></span>
+              <span><span class="k">VOL REGIME</span><span class="v" id="ks-vol-regime">—</span></span>
+            </div>
           </div>
-          <div class="ks-flag" id="ks-flag" hidden>⚠ ELEVATED VOLATILITY — widen stops or scale size down</div>
         </div>
-        <div class="ks-r">
-          <div class="ks-ref">
-            <div class="ks-ref-row"><span class="ks-ref-k">BTC SPOT</span><span class="ks-ref-v" id="ks-spot">—</span></div>
-            <div class="ks-ref-row"><span class="ks-ref-k">24h CHG</span><span class="ks-ref-v" id="ks-chg">—</span></div>
-            <div class="ks-ref-row"><span class="ks-ref-k">EDGE</span><span class="ks-ref-v" id="ks-edge">—</span></div>
-            <div class="ks-ref-row"><span class="ks-ref-k">VOL REGIME</span><span class="ks-ref-v" id="ks-vol-regime">—</span></div>
+
+        <div class="ks-flag" id="ks-flag" hidden>⚠ ELEVATED VOLATILITY — widen stops or scale size down</div>
+
+        <div class="ks-levels">
+          <div class="ks-lev">
+            <span class="lev-k">ENTRY</span>
+            <span class="lev-v" id="lev-entry">—</span>
+            <span class="lev-d">market · spot now</span>
           </div>
-          <div class="ks-rationale" id="ks-rationale">awaiting feed…</div>
+          <div class="ks-lev ks-lev-stop">
+            <span class="lev-k">STOP</span>
+            <span class="lev-v" id="lev-stop">—</span>
+            <span class="lev-d" id="lev-stop-pct">—</span>
+          </div>
+          <div class="ks-lev ks-lev-target">
+            <span class="lev-k">TARGET</span>
+            <span class="lev-v" id="lev-target">—</span>
+            <span class="lev-d" id="lev-target-pct">—</span>
+          </div>
+          <div class="ks-lev">
+            <span class="lev-k">R : R</span>
+            <span class="lev-v" id="lev-rr">—</span>
+            <span class="lev-d" id="lev-atr">ATR1h —</span>
+          </div>
         </div>
+
+        <div class="ks-rationale" id="ks-rationale">awaiting feed…</div>
+
+        <div class="ks-accuracy">
+          <div class="ka-h">MODEL TRACK RECORD · LAST <span id="ka-window">72</span>h <span class="ka-sub" id="ka-samples">— samples</span></div>
+          <div class="ka-grid">
+            <div class="ka-cell">
+              <span class="ka-k">OVERALL HIT</span>
+              <span class="ka-v" id="ka-overall-hit">— %</span>
+              <span class="ka-d" id="ka-overall-n">— / — directional</span>
+            </div>
+            <div class="ka-cell">
+              <span class="ka-k">BUY HIT</span>
+              <span class="ka-v" id="ka-buy-hit">— %</span>
+              <span class="ka-d" id="ka-buy-ret">avg ret —</span>
+            </div>
+            <div class="ka-cell">
+              <span class="ka-k">SELL HIT</span>
+              <span class="ka-v" id="ka-sell-hit">— %</span>
+              <span class="ka-d" id="ka-sell-ret">avg ret —</span>
+            </div>
+            <div class="ka-cell">
+              <span class="ka-k">RECENT 10</span>
+              <span class="ka-streak" id="ka-streak">— — — — — — — — — —</span>
+              <span class="ka-d">●=win · ○=miss</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ks-recap" id="ks-recap">
+          <span class="kr-h">LAST 24h</span>
+          <span class="kr-body" id="kr-body">no recap yet — waiting on Kronos history</span>
+        </div>
+
         <div class="ks-disc">
-          Signal is a deterministic function of Kronos outputs (upside-prob, vol-amp) + current BTC spot.
-          It is NOT financial advice. Model is research-grade (4M params, MC N=30, 1h bars). Crypto is volatile;
-          do not size positions based solely on this card.
+          Levels are deterministic from Binance ATR (14-bar 1h, vol-adjusted). Track record replays the
+          same signal logic over real history — same code path, same scoring. NOT financial advice.
+          Model is research-grade (4M params, MC N=30, 1h bars). Crypto is volatile — manage your own risk.
         </div>
       </div>
 

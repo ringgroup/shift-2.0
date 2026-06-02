@@ -36,6 +36,7 @@ export default async function handler(request) {
     `${origin}/api/aircraft?preset=mena`,
     `${origin}/api/factbase`,
     `${origin}/api/kronos`,
+    `${origin}/api/kronos/backtest`,
   ];
 
   const t0 = Date.now();

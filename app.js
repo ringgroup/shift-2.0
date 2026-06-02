@@ -2444,18 +2444,20 @@ function renderLive() {
 }
 
 /* ============================================================
- * KRONOS — probabilistic BTC/USDT forecast (server-side scrape of
- * shiyu-coder.github.io/Kronos-demo, parsed into native cards).
+ * KRONOS — probabilistic BTC/USDT forecast → deterministic day-trade
+ * signal. All logic is server-side (/api/kronos + /api/kronos/backtest);
+ * this front-end just renders whatever the endpoints return.
  * ============================================================ */
 const KRONOS_REFRESH_MS = 10 * 60 * 1000; // 10min — upstream is hourly
 let _kronosTimer = null;
 let _kronosInflight = null;
+let _backtestInflight = null;
 
 async function fetchKronos() {
   if (_kronosInflight) return _kronosInflight;
   _kronosInflight = (async () => {
     try {
-      const r = await fetchTimeout('/api/kronos', { cache: 'no-store' }, 10000);
+      const r = await fetchTimeout('/api/kronos', { cache: 'no-store' }, 12000);
       if (!r.ok) throw new Error(`status ${r.status}`);
       return await r.json();
     } catch (e) {
@@ -2466,6 +2468,23 @@ async function fetchKronos() {
     }
   })();
   return _kronosInflight;
+}
+
+async function fetchKronosBacktest() {
+  if (_backtestInflight) return _backtestInflight;
+  _backtestInflight = (async () => {
+    try {
+      const r = await fetchTimeout('/api/kronos/backtest', { cache: 'no-store' }, 20000);
+      if (!r.ok) throw new Error(`status ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      console.warn('[kronos-backtest]', e?.message || e);
+      return null;
+    } finally {
+      _backtestInflight = null;
+    }
+  })();
+  return _backtestInflight;
 }
 
 async function renderKronos() {
@@ -2495,108 +2514,101 @@ async function renderKronos() {
   await paintKronos();
 }
 
-/**
- * Translate Kronos's two raw probabilities into a single actionable bias.
- *
- * The mapping is deterministic and intentionally conservative — we never
- * upgrade conviction above what the edge supports, and we explicitly
- * penalise high vol-amp because the model can be directionally right
- * about a 24h close while the path getting there is a wipe-out.
- *
- *   edge = |upside - 50|        — distance from coin-flip
- *
- *   tier  edge        meaning
- *    3    ≥ 25  →     STRONG     (upside ≥ 75 % or ≤ 25 %)
- *    2    ≥ 15  →     MODERATE
- *    1    ≥ 8   →     WEAK
- *    0    <  8  →     FLAT (no trade)
- *
- *   vol-amp ≥ 85  → tier downgraded by one (explosive regime).
- *   vol-amp ≥ 70  → emit a risk flag (don't downgrade, just warn).
- */
-function deriveKronosSignal(upsidePct, volAmpPct) {
-  const u = Number(String(upsidePct).replace('%', '')) || 50;
-  const v = Number(String(volAmpPct).replace('%', '')) || 50;
-  const edge = Math.abs(u - 50);
+const fmtUsd = (n) => n == null ? '—'
+  : (Math.abs(n) >= 1000
+      ? `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+      : `$${n.toFixed(2)}`);
+const fmtPct = (n, d = 2) => n == null || isNaN(n) ? '—'
+  : `${n >= 0 ? '+' : ''}${n.toFixed(d)} %`;
 
-  let tier;
-  if      (edge >= 25) tier = 3;
-  else if (edge >= 15) tier = 2;
-  else if (edge >= 8)  tier = 1;
-  else                 tier = 0;
-
-  if (v >= 85) tier = Math.max(0, tier - 1);
-
-  const baseDir = u >= 50 ? 'LONG' : 'SHORT';
-  const direction  = tier === 0 ? 'NEUTRAL' : baseDir;
-  const conviction = ['FLAT', 'WEAK', 'MODERATE', 'STRONG'][tier];
-  const size       = ['PASS', '¼ SIZE', '½ SIZE', 'FULL'][tier];
-  const riskFlag   = v >= 70;
-
-  // Vol regime descriptor
-  let volRegime;
-  if      (v >= 85) volRegime = 'EXPLOSIVE';
-  else if (v >= 65) volRegime = 'ELEVATED';
-  else if (v >= 40) volRegime = 'NORMAL';
-  else              volRegime = 'COMPRESSED';
-
-  // Human-readable rationale
-  let rationale;
-  if (tier === 0) {
-    rationale = `Edge (${edge.toFixed(0)} pts) is too thin to justify a directional bet. Stand aside.`;
-  } else if (v >= 85) {
-    rationale = `Model is ${conviction.toLowerCase()}ly ${baseDir.toLowerCase()} (${u.toFixed(1)} % upside) but vol-amp ${v.toFixed(0)} % flags explosive 24h tape — size cut one tier, widen stops, expect path to chop hard.`;
-  } else if (v >= 70) {
-    rationale = `${conviction} ${baseDir.toLowerCase()} bias (${u.toFixed(1)} % upside). Vol regime elevated — execute with discipline; don't add into adverse moves.`;
-  } else {
-    rationale = `${conviction} ${baseDir.toLowerCase()} bias (${u.toFixed(1)} % upside) with ${volRegime.toLowerCase()} vol regime — a clean setup if you take it.`;
-  }
-
-  return { direction, conviction, size, riskFlag, edge, volRegime, rationale };
-}
-
+/** Paint the big signal card from /api/kronos response. */
 function paintKronosSignal(data) {
   const card = document.getElementById('kronos-signal');
   if (!card) return;
   const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = v; };
 
-  const sig = deriveKronosSignal(data.upsidePct, data.volAmpPct);
+  const sig = data.signal || {};
+  const lev = data.levels || {};
 
-  card.dataset.dir = sig.direction.toLowerCase();
-  set('ks-direction',  sig.direction);
-  set('ks-conviction', sig.conviction);
-  set('ks-size',       sig.size);
-  set('ks-edge',       `${sig.edge.toFixed(1)} pts`);
-  set('ks-vol-regime', sig.volRegime);
-  set('ks-rationale',  sig.rationale);
+  // Big action label + action-driven border color
+  card.dataset.action = (sig.action || 'hold').toLowerCase();
+  set('ks-action',     sig.action || '—');
+  set('ks-conviction', sig.conviction || '—');
+  set('ks-size',       sig.size || '—');
+  set('ks-vol-regime', sig.volRegime || '—');
+  set('ks-rationale',  sig.rationale || '—');
 
   const flag = document.getElementById('ks-flag');
   if (flag) flag.hidden = !sig.riskFlag;
 
-  // BTC spot price + 24h change from the existing CoinGecko fetcher.
-  // If state.crypto isn't hydrated yet, kick off a fetch and re-paint when it lands.
-  const btc = state.crypto?.bitcoin;
-  if (btc?.usd != null) {
-    const fmtPrice = btc.usd >= 1000
-      ? `$${btc.usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-      : `$${btc.usd.toFixed(2)}`;
-    set('ks-spot', fmtPrice);
-    const chg = Number(btc.usd_24h_change);
-    if (!Number.isNaN(chg)) {
-      const arrow = chg >= 0 ? '▲' : '▼';
-      set('ks-chg', `${arrow} ${chg.toFixed(2)} %`);
-      const chgEl = document.getElementById('ks-chg');
-      if (chgEl) chgEl.style.color = chg >= 0 ? 'var(--green)' : 'var(--red)';
-    }
-  } else if (typeof fetchCrypto === 'function') {
-    // Lazy-fire and re-paint once. Don't await — we want the signal card
-    // to render the Kronos half immediately.
-    fetchCrypto().then(() => paintKronosSignal(data));
+  // Levels
+  set('lev-entry',      fmtUsd(lev.entry));
+  set('lev-stop',       fmtUsd(lev.stop));
+  set('lev-target',     fmtUsd(lev.target));
+  set('lev-stop-pct',   lev.stopPct   != null ? fmtPct(lev.stopPct)   : '—');
+  set('lev-target-pct', lev.targetPct != null ? fmtPct(lev.targetPct) : '—');
+  set('lev-rr',         lev.rrRatio   != null ? `1 : ${lev.rrRatio.toFixed(1)}` : '—');
+  set('lev-atr',        lev.atr1h     != null ? `ATR1h ${fmtUsd(lev.atr1h)}` : 'ATR1h —');
+}
+
+/** Paint the LAST 24h recap one-liner. */
+function paintKronosRecap(data) {
+  const body = document.getElementById('kr-body');
+  if (!body) return;
+  const r = data.recap;
+  if (!r) {
+    body.textContent = 'no recap yet — Kronos history unavailable';
+    return;
+  }
+  const moveCls = r.returnPct >= 0 ? 'ok' : 'miss';
+  const moveStr = `${r.returnPct >= 0 ? '+' : ''}${r.returnPct.toFixed(2)} %`;
+  let verdict;
+  if (r.signalAction === 'HOLD') {
+    verdict = `held cash · spot moved <b>${moveStr}</b> · no bet placed`;
+  } else if (r.correct === true) {
+    verdict = `<span class="ok">✓ HIT</span> · ${r.signalAction} @ <b>${fmtUsd(r.priceAt)}</b> → <b>${fmtUsd(r.priceNow)}</b> (<span class="${moveCls}">${moveStr}</span>)`;
+  } else if (r.correct === false) {
+    verdict = `<span class="miss">✗ MISS</span> · ${r.signalAction} @ <b>${fmtUsd(r.priceAt)}</b> → <b>${fmtUsd(r.priceNow)}</b> (<span class="${moveCls}">${moveStr}</span>)`;
+  } else {
+    verdict = `${r.signalAction} @ <b>${fmtUsd(r.priceAt)}</b> → <b>${fmtUsd(r.priceNow)}</b> (<span class="${moveCls}">${moveStr}</span>)`;
+  }
+  body.innerHTML = `${r.ts || '—'} · ${verdict}`;
+}
+
+/** Paint the model accuracy strip from /api/kronos/backtest. */
+function paintKronosBacktest(bt) {
+  if (!bt || !bt.ok) return;
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = v; };
+  const s = bt.stats || {};
+
+  set('ka-window',  String(bt.windowHours || 72));
+  set('ka-samples', `${bt.samples || 0} forecasts scored`);
+
+  set('ka-overall-hit', s.overall?.n ? `${s.overall.hitRate.toFixed(0)} %` : '— %');
+  set('ka-overall-n',   `${s.overall?.right ?? 0} / ${s.overall?.n ?? 0} directional`);
+  set('ka-buy-hit',     s.buy?.n  ? `${s.buy.hitRate.toFixed(0)} %`  : '— %');
+  set('ka-buy-ret',     s.buy?.n  ? `avg ret ${fmtPct(s.buy.avgReturn)}`  : 'avg ret —');
+  set('ka-sell-hit',    s.sell?.n ? `${s.sell.hitRate.toFixed(0)} %` : '— %');
+  set('ka-sell-ret',    s.sell?.n ? `avg ret ${fmtPct(s.sell.avgReturn)}` : 'avg ret —');
+
+  // Streak: ●=win, ○=miss, padded with em dashes
+  const streakEl = document.getElementById('ka-streak');
+  if (streakEl) {
+    const dots = (s.recentStreak || []).map((c) => {
+      if (c === true)  return '<span class="win">●</span>';
+      if (c === false) return '<span class="miss">○</span>';
+      return '<span class="hold">·</span>';
+    });
+    while (dots.length < 10) dots.unshift('<span class="hold">—</span>');
+    streakEl.innerHTML = dots.join(' ');
   }
 }
 
 async function paintKronos() {
-  const data = await fetchKronos();
+  // Live signal + backtest in parallel — backtest is slower (GitHub API +
+  // 50+ raw fetches + Binance) but we don't want to block the signal card.
+  const [data, bt] = await Promise.all([fetchKronos(), fetchKronosBacktest()]);
+
   if (!data || !data.ok) {
     const sub = document.getElementById('kronos-sub');
     if (sub) sub.textContent = 'upstream unreachable — retrying…';
@@ -2609,13 +2621,14 @@ async function paintKronos() {
   setText('kronos-updated', data.updatedAt ? `${data.updatedAt} UTC` : '—');
   setText('kronos-upside',  data.upsidePct || '— %');
   setText('kronos-vol',     data.volAmpPct || '— %');
-  setText('kronos-sub',     `BTC/USDT · 1h · Binance · MIT — model: ${data.model || 'Kronos'}`);
+  setText('kronos-sub',     `BTC/USDT · 1h · Binance · spot ${fmtUsd(data.spot)} · ${data.spot24hChg >= 0 ? '▲' : '▼'} ${Math.abs(data.spot24hChg ?? 0).toFixed(2)} %`);
 
   paintKronosSignal(data);
+  paintKronosRecap(data);
+  if (bt) paintKronosBacktest(bt);
 
   const img = document.getElementById('kronos-chart-img');
   if (img && data.chartUrl) {
-    // Cache-bust on each refresh so we always pick up a regenerated chart
     img.src = `${data.chartUrl}&t=${Date.now()}`;
   }
 }
