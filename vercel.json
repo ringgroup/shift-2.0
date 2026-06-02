@@ -3,8 +3,9 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "crons": [
-    { "path": "/api/cron/refresh", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/scrape",  "schedule": "*/10 * * * *" }
+    { "path": "/api/cron/refresh",      "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/scrape",       "schedule": "*/10 * * * *" },
+    { "path": "/api/cron/kronos-trend", "schedule": "0 6 * * *" }
   ],
   "headers": [
     {

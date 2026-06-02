@@ -1956,6 +1956,32 @@ kbd {
   margin-bottom: 8px;
 }
 .ka-sub { color: var(--dim2); font-weight: 500; letter-spacing: 0.4px; }
+.ka-trend {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+}
+.ka-trend-lbl { color: var(--dim2); }
+.ka-spark { display: block; }
+.ka-spark .spark-line   { fill: none; stroke: var(--amber); stroke-width: 1.4; }
+.ka-spark .spark-area   { fill: var(--amber-soft); opacity: 0.18; }
+.ka-spark .spark-mid    { stroke: var(--border2); stroke-width: 0.6; stroke-dasharray: 2 2; }
+.ka-spark .spark-dot    { fill: var(--amber); }
+.ka-spark .spark-dot-last { fill: var(--green); r: 2.4; }
+.ka-trend-now   { color: var(--amber); }
+.ka-trend-delta.up   { color: var(--green); }
+.ka-trend-delta.down { color: var(--red);   }
+.ka-trend-delta.flat { color: var(--dim2);  }
+.ka-trend-slope.up   { color: var(--green); }
+.ka-trend-slope.down { color: var(--red);   }
+.ka-trend-slope.flat { color: var(--dim2);  }
+@media (max-width: 720px) {
+  .ka-h { flex-wrap: wrap; gap: 4px 8px; }
+  .ka-trend { margin-left: 0; }
+}
 .ka-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

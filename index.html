@@ -323,7 +323,17 @@
         <div class="ks-rationale" id="ks-rationale">awaiting feed…</div>
 
         <div class="ks-accuracy">
-          <div class="ka-h">MODEL TRACK RECORD · LAST <span id="ka-window">72</span>h <span class="ka-sub" id="ka-samples">— samples</span></div>
+          <div class="ka-h">
+            MODEL TRACK RECORD · LAST <span id="ka-window">72</span>h
+            <span class="ka-sub" id="ka-samples">— samples</span>
+            <span class="ka-trend" id="ka-trend" hidden>
+              <span class="ka-trend-lbl">7d</span>
+              <svg class="ka-spark" id="ka-spark" width="120" height="22" viewBox="0 0 120 22" preserveAspectRatio="none"></svg>
+              <span class="ka-trend-now" id="ka-trend-now">— %</span>
+              <span class="ka-trend-delta" id="ka-trend-delta">—</span>
+              <span class="ka-trend-slope" id="ka-trend-slope">—</span>
+            </span>
+          </div>
           <div class="ka-grid">
             <div class="ka-cell">
               <span class="ka-k">OVERALL HIT</span>

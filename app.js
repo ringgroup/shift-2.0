@@ -2487,6 +2487,25 @@ async function fetchKronosBacktest() {
   return _backtestInflight;
 }
 
+let _trendInflight = null;
+async function fetchKronosTrend() {
+  if (_trendInflight) return _trendInflight;
+  _trendInflight = (async () => {
+    try {
+      // Trend endpoint is heavy on first hit (~10s cold) — generous timeout
+      const r = await fetchTimeout('/api/kronos/trend?days=7', { cache: 'no-store' }, 30000);
+      if (!r.ok) throw new Error(`status ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      console.warn('[kronos-trend]', e?.message || e);
+      return null;
+    } finally {
+      _trendInflight = null;
+    }
+  })();
+  return _trendInflight;
+}
+
 async function renderKronos() {
   const view = document.getElementById('kronos-view');
   if (!view) return;
@@ -2575,6 +2594,98 @@ function paintKronosRecap(data) {
   body.innerHTML = `${r.ts || '—'} · ${verdict}`;
 }
 
+/** Render the 7-day hit-rate sparkline + day-over-day delta + slope. */
+function paintKronosTrend(t) {
+  const wrap = document.getElementById('ka-trend');
+  if (!wrap || !t || !t.ok || !t.series?.length) return;
+
+  const W = 120, H = 22, PAD_X = 2, PAD_Y = 3;
+  const svg = document.getElementById('ka-spark');
+  if (!svg) return;
+
+  // Filter out null hit-rate days; map remaining to [x,y]
+  const points = t.series
+    .map((s, i) => ({ i, hit: s.hitRate, samples: s.directional || 0, day: s.day }));
+  const valid = points.filter((p) => p.hit != null);
+  if (!valid.length) return;
+
+  const minHit = Math.min(...valid.map((p) => p.hit), 30);
+  const maxHit = Math.max(...valid.map((p) => p.hit), 70);
+  const range = Math.max(20, maxHit - minHit); // never collapse to a flat line
+  const xStep = (W - PAD_X * 2) / Math.max(1, points.length - 1);
+
+  const xy = (p) => {
+    const x = PAD_X + p.i * xStep;
+    const y = PAD_Y + (1 - (p.hit - minHit) / range) * (H - PAD_Y * 2);
+    return { x, y };
+  };
+
+  // Path through valid points (gaps render as breaks in the polyline)
+  let d = '';
+  let area = '';
+  let prevX = null;
+  for (const p of points) {
+    if (p.hit == null) { prevX = null; continue; }
+    const { x, y } = xy(p);
+    if (prevX == null) { d += `M ${x.toFixed(1)} ${y.toFixed(1)}`; area = `M ${x.toFixed(1)} ${H} L ${x.toFixed(1)} ${y.toFixed(1)}`; }
+    else { d += ` L ${x.toFixed(1)} ${y.toFixed(1)}`; area += ` L ${x.toFixed(1)} ${y.toFixed(1)}`; }
+    prevX = x;
+  }
+  // Close area to baseline
+  if (area) {
+    const lastValid = [...valid].pop();
+    const lx = PAD_X + lastValid.i * xStep;
+    area += ` L ${lx.toFixed(1)} ${H} Z`;
+  }
+
+  // Midline at 50% (coin-flip reference)
+  const midY = PAD_Y + (1 - (50 - minHit) / range) * (H - PAD_Y * 2);
+  const midInRange = (50 >= minHit && 50 <= minHit + range);
+
+  // Dots for each valid sample
+  const dots = valid.map((p, idx) => {
+    const { x, y } = xy(p);
+    const cls = (idx === valid.length - 1) ? 'spark-dot spark-dot-last' : 'spark-dot';
+    return `<circle class="${cls}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" />`;
+  }).join('');
+
+  svg.innerHTML = `
+    ${midInRange ? `<line class="spark-mid" x1="${PAD_X}" y1="${midY.toFixed(1)}" x2="${W - PAD_X}" y2="${midY.toFixed(1)}" />` : ''}
+    ${area ? `<path class="spark-area" d="${area}" />` : ''}
+    ${d ? `<path class="spark-line" d="${d}" />` : ''}
+    ${dots}
+  `;
+  wrap.hidden = false;
+
+  // Numeric annotations to the right of the spark
+  const now = t.latest?.hitRate;
+  const delta = t.latest?.delta;
+  const slope = t.slope;
+
+  const nowEl   = document.getElementById('ka-trend-now');
+  const deltaEl = document.getElementById('ka-trend-delta');
+  const slopeEl = document.getElementById('ka-trend-slope');
+
+  if (nowEl) nowEl.textContent = now != null ? `${now.toFixed(0)} %` : '— %';
+
+  if (deltaEl) {
+    if (delta == null) { deltaEl.textContent = '—'; deltaEl.className = 'ka-trend-delta flat'; }
+    else {
+      const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '·';
+      deltaEl.textContent = `${arrow} ${Math.abs(delta).toFixed(1)} pts d/d`;
+      deltaEl.className = 'ka-trend-delta ' + (delta > 1 ? 'up' : delta < -1 ? 'down' : 'flat');
+    }
+  }
+  if (slopeEl) {
+    if (slope == null) { slopeEl.textContent = '—'; slopeEl.className = 'ka-trend-slope flat'; }
+    else {
+      const tag = slope > 0.5 ? 'IMPROVING' : slope < -0.5 ? 'DEGRADING' : 'FLAT';
+      slopeEl.textContent = `· ${tag}`;
+      slopeEl.className = 'ka-trend-slope ' + (slope > 0.5 ? 'up' : slope < -0.5 ? 'down' : 'flat');
+    }
+  }
+}
+
 /** Paint the model accuracy strip from /api/kronos/backtest. */
 function paintKronosBacktest(bt) {
   if (!bt || !bt.ok) return;
@@ -2605,9 +2716,14 @@ function paintKronosBacktest(bt) {
 }
 
 async function paintKronos() {
-  // Live signal + backtest in parallel — backtest is slower (GitHub API +
-  // 50+ raw fetches + Binance) but we don't want to block the signal card.
-  const [data, bt] = await Promise.all([fetchKronos(), fetchKronosBacktest()]);
+  // Live signal + backtest + trend in parallel. Backtest is slow (~3s
+  // warm), trend is slower (~10s cold, instant if cron warmed cache).
+  // None block each other; each painter handles missing data gracefully.
+  const [data, bt, trend] = await Promise.all([
+    fetchKronos(),
+    fetchKronosBacktest(),
+    fetchKronosTrend(),
+  ]);
 
   if (!data || !data.ok) {
     const sub = document.getElementById('kronos-sub');
@@ -2625,7 +2741,8 @@ async function paintKronos() {
 
   paintKronosSignal(data);
   paintKronosRecap(data);
-  if (bt) paintKronosBacktest(bt);
+  if (bt)    paintKronosBacktest(bt);
+  if (trend) paintKronosTrend(trend);
 
   const img = document.getElementById('kronos-chart-img');
   if (img && data.chartUrl) {
