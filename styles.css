@@ -842,6 +842,61 @@ body.fetching .dataflow {
   padding-top: 5px;
 }
 
+/* ============= DOW THEATER STRIP (nested under DOW sub-tab) ============= */
+.theater-strip {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+  position: sticky;
+  top: 30px; /* sits below the dept subtab-strip which is ~30px tall */
+  z-index: 49;
+}
+.theater-strip::-webkit-scrollbar { display: none; }
+.theater-chip {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-family: var(--mono);
+  padding: 5px 10px;
+  cursor: pointer;
+  text-align: left;
+  flex-shrink: 0;
+  min-width: 110px;
+}
+.theater-chip .tc-l {
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+.theater-chip .tc-s {
+  color: var(--dim2);
+  font-size: 9px;
+  letter-spacing: 0.4px;
+}
+.theater-chip:hover {
+  background: var(--hover);
+  border-color: var(--amber-soft);
+}
+.theater-chip:hover .tc-l { color: #fff; }
+.theater-chip.active {
+  background: var(--bg);
+  border-color: var(--amber);
+  border-left-width: 2px;
+}
+.theater-chip.active .tc-l { color: var(--amber); }
+.theater-chip.active .tc-s { color: var(--amber-dim); }
+@media (max-width: 540px) {
+  .theater-chip { min-width: 95px; padding: 4px 8px; }
+  .theater-chip .tc-l { font-size: 10px; }
+  .theater-chip .tc-s { font-size: 8.5px; }
+}
+
 /* ============= SECTION HEAD ============= */
 .section-head {
   background: var(--bg2);

@@ -152,10 +152,17 @@ const SOURCES = [
   { id: 'dos-pr',    name: 'DoS press',       url: 'https://news.google.com/rss/search?q=site:state.gov+press+OR+release&when:2d&hl=en-US&gl=US&ceid=US:en',                                          region: 'US-GOV', lang: 'en' },
   { id: 'dow',       name: 'DoW War Dept',    url: 'https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20',                                                            region: 'US-GOV', lang: 'en' },
   // DVIDS firehose is 400+ items/day, 99% stateside National Guard. We
-  // filter to CENTCOM/MENA-relevant items server-side in /api/dvids before
-  // they ever reach the deck. See api/dvids.js for the keyword regex.
-  { id: 'dvids',     name: 'DVIDS · CENTCOM',         url: '/api/dvids?type=news',  region: 'US-GOV', lang: 'en' },
-  { id: 'dvids-img', name: 'DVIDS · CENTCOM imagery', url: '/api/dvids?type=image', region: 'US-GOV', lang: 'en' },
+  // filter to theater-relevant items server-side in /api/dvids before they
+  // ever reach the deck. Four theaters × {news, image} = 8 sources. The
+  // DOW sub-tab below renders a theater chip-strip to switch between them.
+  { id: 'dvids-cc',      name: 'DVIDS · CENTCOM',         url: '/api/dvids?type=news&theater=centcom',    region: 'US-GOV', lang: 'en', dvidsTheater: 'centcom',   dvidsType: 'news' },
+  { id: 'dvids-cc-img',  name: 'DVIDS · CENTCOM imagery', url: '/api/dvids?type=image&theater=centcom',   region: 'US-GOV', lang: 'en', dvidsTheater: 'centcom',   dvidsType: 'image' },
+  { id: 'dvids-eu',      name: 'DVIDS · EUCOM',           url: '/api/dvids?type=news&theater=eucom',      region: 'US-GOV', lang: 'en', dvidsTheater: 'eucom',     dvidsType: 'news' },
+  { id: 'dvids-eu-img',  name: 'DVIDS · EUCOM imagery',   url: '/api/dvids?type=image&theater=eucom',     region: 'US-GOV', lang: 'en', dvidsTheater: 'eucom',     dvidsType: 'image' },
+  { id: 'dvids-ip',      name: 'DVIDS · INDOPACOM',       url: '/api/dvids?type=news&theater=indopacom',  region: 'US-GOV', lang: 'en', dvidsTheater: 'indopacom', dvidsType: 'news' },
+  { id: 'dvids-ip-img',  name: 'DVIDS · INDOPACOM imagery', url: '/api/dvids?type=image&theater=indopacom', region: 'US-GOV', lang: 'en', dvidsTheater: 'indopacom', dvidsType: 'image' },
+  { id: 'dvids-af',      name: 'DVIDS · AFRICOM',         url: '/api/dvids?type=news&theater=africom',    region: 'US-GOV', lang: 'en', dvidsTheater: 'africom',   dvidsType: 'news' },
+  { id: 'dvids-af-img',  name: 'DVIDS · AFRICOM imagery', url: '/api/dvids?type=image&theater=africom',   region: 'US-GOV', lang: 'en', dvidsTheater: 'africom',   dvidsType: 'image' },
   { id: 'doe',       name: 'DoE Energy',      url: 'https://www.energy.gov/rss.xml',                                                                                                                  region: 'US-GOV', lang: 'en' },
   { id: 'doe-news',  name: 'DoE via news',    url: 'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'doj',       name: 'DoJ Justice',     url: 'https://www.justice.gov/feeds/justice-news.xml',                                                                                                  region: 'US-GOV', lang: 'en' },
@@ -421,6 +428,7 @@ const state = {
   modalList: [],
   modalIdx: 0,
   usGovSubtab: 'potus',
+  dowTheater: 'centcom',  // active theater under the DOW sub-tab
 };
 
 /* ===== Hydrate from localStorage immediately so first paint shows data ===== */
@@ -601,6 +609,12 @@ function parseRSS(xmlText, source) {
      */
     const drift = date.getTime() - Date.now();
     if (drift > 72 * 3600 * 1000) return;
+    // DoJ never pre-publishes press releases — any future-dated DoJ item
+    // is a calendar entry (FOIA training, quarterly data-due reminder, etc.)
+    // The /event/ path-check below catches most of them but some unscheduled
+    // calendar items live at other paths, so the future-date check is the
+    // belt-and-suspenders rule.
+    if (source.id === 'doj' && drift > 0) return;
     if (source.id === 'doj' && /\/(?:event|oip\/event)\//i.test(link)) return;
 
     items.push({
@@ -3012,7 +3026,11 @@ const US_GOV_SOURCE_IDS = new Set([
   'wh', 'wh-news',
   'fb-cdn', 'rc-main', 'fb-news', 'potus-sch', 'politico',
   'dos', 'dos-pr',
-  'dow', 'dvids', 'dvids-img',
+  'dow',
+  'dvids-cc', 'dvids-cc-img',
+  'dvids-eu', 'dvids-eu-img',
+  'dvids-ip', 'dvids-ip-img',
+  'dvids-af', 'dvids-af-img',
   'doe', 'doe-news',
   'doj', 'doj-news',
   'treasury', 'treas-news', 'ofac',
@@ -3021,6 +3039,31 @@ const US_GOV_SOURCE_IDS = new Set([
   'senate-rc', 'house-rc',
 ]);
 
+/* DOW theater sub-strip — second-level chips inside the DOW sub-tab.
+ * Each theater maps to a DVIDS source-id prefix (dvids-cc, dvids-eu, etc.)
+ * so the filter in renderContent can match by string prefix. */
+const DOW_THEATERS = [
+  { id: 'centcom',   label: 'CENTCOM',   sub: 'MENA · Gulf · Levant' },
+  { id: 'eucom',     label: 'EUCOM',     sub: 'Europe · Ukraine · NATO' },
+  { id: 'indopacom', label: 'INDOPACOM', sub: 'China · Taiwan · Korea' },
+  { id: 'africom',   label: 'AFRICOM',   sub: 'Sahel · Horn · N Africa' },
+];
+const THEATER_PREFIX = {
+  centcom: 'cc', eucom: 'eu', indopacom: 'ip', africom: 'af',
+};
+function renderDowTheaterStrip(active) {
+  return `
+    <div class="theater-strip" id="dow-theater-strip">
+      ${DOW_THEATERS.map((t) =>
+        `<button class="theater-chip${t.id === active ? ' active' : ''}" data-theater="${t.id}" title="${escapeHtml(t.sub)}">
+           <span class="tc-l">${escapeHtml(t.label)}</span>
+           <span class="tc-s">${escapeHtml(t.sub)}</span>
+         </button>`
+      ).join('')}
+    </div>
+  `;
+}
+
 /* US GOV sub-tabs — drill down by department. Rendered as a chip strip
  * at the top of the us-gov view; click swaps the filter. */
 const US_GOV_SUBTABS = [
@@ -3028,7 +3071,13 @@ const US_GOV_SUBTABS = [
   { id: 'wh',       label: 'WH',        sources: ['wh', 'wh-news', 'rc-main'] },
   { id: 'congress', label: 'CONGRESS',  sources: ['senate-rc', 'house-rc'] },
   { id: 'state',    label: 'DOS',       sources: ['dos', 'dos-pr'] },
-  { id: 'war',      label: 'DOW',       sources: ['dow', 'dvids', 'dvids-img'] },
+  { id: 'war',      label: 'DOW',       sources: [
+    'dow',
+    'dvids-cc', 'dvids-cc-img',
+    'dvids-eu', 'dvids-eu-img',
+    'dvids-ip', 'dvids-ip-img',
+    'dvids-af', 'dvids-af-img',
+  ] },
   { id: 'energy',   label: 'DOE',       sources: ['doe', 'doe-news'] },
   { id: 'justice',  label: 'DOJ',       sources: ['doj', 'doj-news'] },
   { id: 'treasury', label: 'TREASURY',  sources: ['treasury', 'treas-news', 'ofac', 'ofac-sdn', 'ofac-terror', 'ofac-nonprolif', 'ofac-iran', 'ofac-iraq', 'ofac-syria', 'ofac-lebanon', 'ofac-nk', 'ofac-sudan'] },
@@ -3190,6 +3239,19 @@ function renderContent() {
       state.modalList = items.slice(0, 300);
       state.focusedIdx = -1;
       return;
+    }
+    // DOW sub-tab: nested theater strip — filters DVIDS sources by theater.
+    // Non-DVIDS DOW sources (war.gov RSS) stay visible across all theaters.
+    if (subId === 'war') {
+      const theater = state.dowTheater || 'centcom';
+      const theaterPrefix = renderDowTheaterStrip(theater);
+      const dvidsCount = items.reduce((acc, it) => acc + (it.sourceId.startsWith('dvids-') ? 1 : 0), 0);
+      items = items.filter((it) => {
+        if (!it.sourceId.startsWith('dvids-')) return true;            // keep non-DVIDS DoW items
+        return it.sourceId.startsWith(`dvids-${THEATER_PREFIX[theater]}`);
+      });
+      prefix += theaterPrefix;
+      // (Falls through to common renderer below — items are now theater-filtered.)
     }
   } else if (activeTab !== 'all') {
     items = items.filter((i) => i.tags.includes(activeTab));
@@ -3443,8 +3505,18 @@ function bindContentClicks() {
     renderContent();
     return true;
   };
+  const theaterHandler = (e) => {
+    const btn = e.target.closest('.theater-chip');
+    if (!btn) return;
+    const id = btn.dataset.theater;
+    if (!id) return;
+    state.dowTheater = id;
+    renderContent();
+    return true;
+  };
   const handler = (e) => {
     if (subtabHandler(e)) return;
+    if (theaterHandler(e)) return;
     const art = e.target.closest('article.item');
     if (!art) return;
     // Don't hijack actual tag clicks etc — only the title link / article body
