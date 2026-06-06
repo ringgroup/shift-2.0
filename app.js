@@ -163,6 +163,20 @@ const SOURCES = [
   { id: 'dvids-ip-img',  name: 'DVIDS · INDOPACOM imagery', url: '/api/dvids?type=image&theater=indopacom', region: 'US-GOV', lang: 'en', dvidsTheater: 'indopacom', dvidsType: 'image' },
   { id: 'dvids-af',      name: 'DVIDS · AFRICOM',         url: '/api/dvids?type=news&theater=africom',    region: 'US-GOV', lang: 'en', dvidsTheater: 'africom',   dvidsType: 'news' },
   { id: 'dvids-af-img',  name: 'DVIDS · AFRICOM imagery', url: '/api/dvids?type=image&theater=africom',   region: 'US-GOV', lang: 'en', dvidsTheater: 'africom',   dvidsType: 'image' },
+  // Video — same theater filter as news/image but coming from /rss/video.
+  // DVIDS only publishes 20 videos/day across all topics so the per-theater
+  // yield is typically 0-2. When CENTCOM has a real op (e.g. CENTCOM Forces
+  // Defeat Iranian Missiles), it shows here with a video thumbnail.
+  { id: 'dvids-cc-vid',  name: 'DVIDS · CENTCOM video',   url: '/api/dvids?type=video&theater=centcom',   region: 'US-GOV', lang: 'en', dvidsTheater: 'centcom',   dvidsType: 'video' },
+  { id: 'dvids-eu-vid',  name: 'DVIDS · EUCOM video',     url: '/api/dvids?type=video&theater=eucom',     region: 'US-GOV', lang: 'en', dvidsTheater: 'eucom',     dvidsType: 'video' },
+  { id: 'dvids-ip-vid',  name: 'DVIDS · INDOPACOM video', url: '/api/dvids?type=video&theater=indopacom', region: 'US-GOV', lang: 'en', dvidsTheater: 'indopacom', dvidsType: 'video' },
+  { id: 'dvids-af-vid',  name: 'DVIDS · AFRICOM video',   url: '/api/dvids?type=video&theater=africom',   region: 'US-GOV', lang: 'en', dvidsTheater: 'africom',   dvidsType: 'video' },
+  // Non-DVIDS defense sources. These are theater-agnostic press (cover all
+  // COCOMs, just with different prominence) so they're not theater-filtered;
+  // they appear under ALL theater chips alongside war.gov.
+  { id: 'usni',          name: 'USNI News',               url: 'https://news.usni.org/feed',              region: 'US-GOV', lang: 'en' },
+  { id: 'stripes-gn',    name: 'Stars & Stripes',         url: 'https://news.google.com/rss/search?q=site:stripes.com+(Middle+East+OR+CENTCOM+OR+Iran+OR+Israel+OR+Ukraine)&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
+  { id: 'defnews-gn',    name: 'Defense News',            url: 'https://news.google.com/rss/search?q=site:defensenews.com+(CENTCOM+OR+Iran+OR+Israel+OR+Saudi+OR+Ukraine+OR+China+OR+Taiwan)&when:2d&hl=en-US&gl=US&ceid=US:en', region: 'US-GOV', lang: 'en' },
   { id: 'doe',       name: 'DoE Energy',      url: 'https://www.energy.gov/rss.xml',                                                                                                                  region: 'US-GOV', lang: 'en' },
   { id: 'doe-news',  name: 'DoE via news',    url: 'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'doj',       name: 'DoJ Justice',     url: 'https://www.justice.gov/feeds/justice-news.xml',                                                                                                  region: 'US-GOV', lang: 'en' },
@@ -3028,10 +3042,11 @@ const US_GOV_SOURCE_IDS = new Set([
   'fb-cdn', 'rc-main', 'fb-news', 'potus-sch', 'politico',
   'dos', 'dos-pr',
   'dow',
-  'dvids-cc', 'dvids-cc-img',
-  'dvids-eu', 'dvids-eu-img',
-  'dvids-ip', 'dvids-ip-img',
-  'dvids-af', 'dvids-af-img',
+  'dvids-cc', 'dvids-cc-img', 'dvids-cc-vid',
+  'dvids-eu', 'dvids-eu-img', 'dvids-eu-vid',
+  'dvids-ip', 'dvids-ip-img', 'dvids-ip-vid',
+  'dvids-af', 'dvids-af-img', 'dvids-af-vid',
+  'usni', 'stripes-gn', 'defnews-gn',
   'doe', 'doe-news',
   'doj', 'doj-news',
   'treasury', 'treas-news', 'ofac',
@@ -3105,10 +3120,11 @@ const US_GOV_SUBTABS = [
   { id: 'state',    label: 'DOS',       sources: ['dos', 'dos-pr'] },
   { id: 'war',      label: 'DOW',       sources: [
     'dow',
-    'dvids-cc', 'dvids-cc-img',
-    'dvids-eu', 'dvids-eu-img',
-    'dvids-ip', 'dvids-ip-img',
-    'dvids-af', 'dvids-af-img',
+    'dvids-cc', 'dvids-cc-img', 'dvids-cc-vid',
+    'dvids-eu', 'dvids-eu-img', 'dvids-eu-vid',
+    'dvids-ip', 'dvids-ip-img', 'dvids-ip-vid',
+    'dvids-af', 'dvids-af-img', 'dvids-af-vid',
+    'usni', 'stripes-gn', 'defnews-gn',
   ] },
   { id: 'energy',   label: 'DOE',       sources: ['doe', 'doe-news'] },
   { id: 'justice',  label: 'DOJ',       sources: ['doj', 'doj-news'] },
@@ -3516,8 +3532,12 @@ function renderItem(it) {
     ? `<div class="orig" dir="rtl">${escapeHtml(it.originalTitle)}</div>`
     : '';
   const dateIso = it.date instanceof Date ? it.date.toISOString() : new Date(it.date).toISOString();
+  const isVideo = /-vid$/.test(it.sourceId || '') || /\/video\//.test(it.link || '');
   const thumb = it.image
-    ? `<div class="item-thumb"><img loading="lazy" referrerpolicy="no-referrer" src="${escapeHtml(it.image)}" alt="" onerror="this.parentElement.style.display='none'" /></div>`
+    ? `<div class="item-thumb${isVideo ? ' item-thumb-video' : ''}">
+         <img loading="lazy" referrerpolicy="no-referrer" src="${escapeHtml(it.image)}" alt="" onerror="this.parentElement.style.display='none'" />
+         ${isVideo ? '<span class="play-badge" aria-hidden="true">▶</span>' : ''}
+       </div>`
     : '';
   const itemCls = 'item' + (it.image ? ' item-has-thumb' : '');
   return `

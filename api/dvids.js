@@ -61,9 +61,21 @@ const THEATERS = {
       '\\bIRGC\\b', '\\bISIS\\b', '\\bISIL\\b', '\\bDaesh\\b',
       // Operations
       '\\bInherent Resolve\\b', '\\bProsperity Guardian\\b',
+      '\\bAccountable Resolve\\b',
+      // CENTCOM annual exercises
+      '\\bEager Lion\\b', '\\bBright Star\\b', '\\bIron Union\\b',
+      '\\bIron Defender\\b', '\\bIron Spike\\b', '\\bIron Hawk\\b',
+      '\\bNative Fury\\b', '\\bInferno Creek\\b', '\\bIntrinsic Defender\\b',
       // Forward bases
       '\\bAl Udeid\\b', '\\bAl Dhafra\\b', '\\bCamp Arifjan\\b',
       '\\bCamp Buehring\\b', '\\bNSA Bahrain\\b', '\\bManama\\b',
+      '\\bBagram\\b', '\\bAl Asad\\b', '\\bAin al[- ]Asad\\b',
+      '\\bAl Jaber\\b', '\\bAli Al Salem\\b', '\\bThumrait\\b',
+      '\\bIsa Air Base\\b', '\\bShaikh Isa\\b',
+      // Carriers — when in CENTCOM AOR these are big signals
+      '\\bGulf of Oman\\b', '\\bGulf of Aden\\b',
+      // Less-common partner: Pakistan straddles CENTCOM/INDOPACOM
+      '\\bPakistan\\b', '\\bPakistani\\b',
     ].join('|'), 'i'),
     exclude: new RegExp([
       '\\bEURAFCENT\\b', '\\bEUCOM\\b', '\\bAFRICOM\\b',
@@ -168,6 +180,11 @@ const THEATERS = {
 const UPSTREAM = {
   news:  'https://www.dvidshub.net/rss/news/all',
   image: 'https://www.dvidshub.net/rss/image/all',
+  // No /video/all firehose exists (it returns the all-types search, useless).
+  // /rss/video is the actual video feed but only ~20 items per day, latest
+  // across all topics. We filter it the same way as news/image — most days
+  // we'll catch the 1-3 CENTCOM videos.
+  video: 'https://www.dvidshub.net/rss/video',
 };
 
 const BROWSER_HEADERS = {
@@ -209,7 +226,10 @@ function keepItem(itemXml, theater) {
 
 export default async function handler(request) {
   const u = new URL(request.url);
-  const type = u.searchParams.get('type') === 'image' ? 'image' : 'news';
+  const typeParam = u.searchParams.get('type');
+  const type = typeParam === 'image' ? 'image'
+             : typeParam === 'video' ? 'video'
+             : 'news';
   const theaterKey = (u.searchParams.get('theater') || 'centcom').toLowerCase();
   const theater = THEATERS[theaterKey];
   if (!theater) {
