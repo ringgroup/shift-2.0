@@ -152,6 +152,7 @@ const SOURCES = [
   { id: 'dos-pr',    name: 'DoS press',       url: 'https://news.google.com/rss/search?q=site:state.gov+press+OR+release&when:2d&hl=en-US&gl=US&ceid=US:en',                                          region: 'US-GOV', lang: 'en' },
   { id: 'dow',       name: 'DoW War Dept',    url: 'https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20',                                                            region: 'US-GOV', lang: 'en' },
   { id: 'dvids',     name: 'DVIDS · DoW',     url: 'https://www.dvidshub.net/rss/news',                                                                                                              region: 'US-GOV', lang: 'en' },
+  { id: 'dvids-img', name: 'DVIDS · Imagery', url: 'https://www.dvidshub.net/rss/image',                                                                                                             region: 'US-GOV', lang: 'en' },
   { id: 'doe',       name: 'DoE Energy',      url: 'https://www.energy.gov/rss.xml',                                                                                                                  region: 'US-GOV', lang: 'en' },
   { id: 'doe-news',  name: 'DoE via news',    url: 'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'doj',       name: 'DoJ Justice',     url: 'https://www.justice.gov/feeds/justice-news.xml',                                                                                                  region: 'US-GOV', lang: 'en' },
@@ -553,6 +554,33 @@ function parseRSS(xmlText, source) {
       '';
     const desc = descRaw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220);
 
+    /* Image extraction. Pull, in priority order:
+     *   1. media:thumbnail url=…                (DVIDS, many news wires)
+     *   2. media:content url=… (image mediums)  (Yahoo Media RSS)
+     *   3. <enclosure url=… type="image/…">     (standard RSS 2.0)
+     *   4. <img src=…> inside the description   (most blogs, Substack, etc.)
+     * We resolve to absolute URLs and ignore data: URLs and 1px trackers. */
+    let image = '';
+    const mt = el.getElementsByTagName('media:thumbnail')[0];
+    if (mt) image = mt.getAttribute('url') || '';
+    if (!image) {
+      const mc = Array.from(el.getElementsByTagName('media:content'))
+        .find((n) => /^image/i.test(n.getAttribute('medium') || n.getAttribute('type') || ''));
+      if (mc) image = mc.getAttribute('url') || '';
+    }
+    if (!image) {
+      const enc = el.querySelector('enclosure[type^="image"]');
+      if (enc) image = enc.getAttribute('url') || '';
+    }
+    if (!image && descRaw) {
+      const m = descRaw.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (m) image = m[1];
+    }
+    // Strip 1px trackers (width/height=1)
+    if (image && /[\?&](?:w|width|h|height)=1(?:[&"']|$)/i.test(image)) image = '';
+    // Reject data: URLs
+    if (/^data:/i.test(image)) image = '';
+
     const date = dateRaw ? new Date(dateRaw) : new Date();
 
     /* ---- noise filters ----
@@ -577,6 +605,7 @@ function parseRSS(xmlText, source) {
       title,
       link,
       summary: desc,
+      image,
       date: isNaN(date.getTime()) ? new Date() : date,
       source: source.name,
       sourceId: source.id,
@@ -2980,7 +3009,7 @@ const US_GOV_SOURCE_IDS = new Set([
   'wh', 'wh-news',
   'fb-cdn', 'rc-main', 'fb-news', 'potus-sch', 'politico',
   'dos', 'dos-pr',
-  'dow', 'dvids',
+  'dow', 'dvids', 'dvids-img',
   'doe', 'doe-news',
   'doj', 'doj-news',
   'treasury', 'treas-news', 'ofac',
@@ -2996,7 +3025,7 @@ const US_GOV_SUBTABS = [
   { id: 'wh',       label: 'WH',        sources: ['wh', 'wh-news', 'rc-main'] },
   { id: 'congress', label: 'CONGRESS',  sources: ['senate-rc', 'house-rc'] },
   { id: 'state',    label: 'DOS',       sources: ['dos', 'dos-pr'] },
-  { id: 'war',      label: 'DOW',       sources: ['dow', 'dvids'] },
+  { id: 'war',      label: 'DOW',       sources: ['dow', 'dvids', 'dvids-img'] },
   { id: 'energy',   label: 'DOE',       sources: ['doe', 'doe-news'] },
   { id: 'justice',  label: 'DOJ',       sources: ['doj', 'doj-news'] },
   { id: 'treasury', label: 'TREASURY',  sources: ['treasury', 'treas-news', 'ofac', 'ofac-sdn', 'ofac-terror', 'ofac-nonprolif', 'ofac-iran', 'ofac-iraq', 'ofac-syria', 'ofac-lebanon', 'ofac-nk', 'ofac-sudan'] },
@@ -3375,17 +3404,24 @@ function renderItem(it) {
     ? `<div class="orig" dir="rtl">${escapeHtml(it.originalTitle)}</div>`
     : '';
   const dateIso = it.date instanceof Date ? it.date.toISOString() : new Date(it.date).toISOString();
+  const thumb = it.image
+    ? `<div class="item-thumb"><img loading="lazy" referrerpolicy="no-referrer" src="${escapeHtml(it.image)}" alt="" onerror="this.parentElement.style.display='none'" /></div>`
+    : '';
+  const itemCls = 'item' + (it.image ? ' item-has-thumb' : '');
   return `
-    <article class="item" data-link="${escapeHtml(it.link)}" data-title="${escapeHtml(it.title)}" data-source="${escapeHtml(it.source || '')}" data-time="${dateIso}">
-      <div class="meta-row">
-        <span class="time">${fmtTimeUTC(it.date)}</span>
-        <span class="ago">−${fmtAgo(it.date)}</span>
-        <span class="src">${escapeHtml(it.source || '')}</span>
-        ${region}
+    <article class="${itemCls}" data-link="${escapeHtml(it.link)}" data-title="${escapeHtml(it.title)}" data-source="${escapeHtml(it.source || '')}" data-time="${dateIso}">
+      ${thumb}
+      <div class="item-body">
+        <div class="meta-row">
+          <span class="time">${fmtTimeUTC(it.date)}</span>
+          <span class="ago">−${fmtAgo(it.date)}</span>
+          <span class="src">${escapeHtml(it.source || '')}</span>
+          ${region}
+        </div>
+        <a class="title" href="${escapeHtml(it.link)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>
+        ${orig}
+        <div class="tag-row">${tagsHtml}</div>
       </div>
-      <a class="title" href="${escapeHtml(it.link)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>
-      ${orig}
-      <div class="tag-row">${tagsHtml}</div>
     </article>
   `;
 }

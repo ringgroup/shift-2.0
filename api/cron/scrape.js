@@ -62,6 +62,7 @@ const FEED_URLS = [
   'https://news.google.com/rss/search?q=site:state.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20',
   'https://www.dvidshub.net/rss/news',
+  'https://www.dvidshub.net/rss/image',
   'https://www.energy.gov/rss.xml',
   'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://www.justice.gov/feeds/justice-news.xml',

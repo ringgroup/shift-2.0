@@ -29,6 +29,20 @@ const BROWSER_HEADERS = {
 };
 
 /**
+ * Per-host cache TTL override (seconds at the edge). Most feeds run on the
+ * default 5min fresh / 30min stale — but DVIDS pushes ~20 stateside items
+ * per day and we only want to hit upstream twice a day, so 12h fresh + 12h
+ * stale lets the cron try every 10min but only refetch when the cache window
+ * expires.
+ */
+function cacheTtlFor(parsedUrl) {
+  if (parsedUrl.hostname.endsWith('dvidshub.net')) {
+    return { sMaxAge: 12 * 3600, swr: 12 * 3600 };
+  }
+  return { sMaxAge: 300, swr: 1800 };
+}
+
+/**
  * Per-host header override. Reddit's ToS requires a uniquely-identifying UA
  * in '<platform>:<app>:<version> (by /u/<user>)' format — Mozilla strings
  * get 429'd from datacenter IPs. RSSHub instances expect a project UA.
@@ -95,14 +109,15 @@ export default async function handler(request) {
     }
     const text = await r.text();
     const ct = r.headers.get('content-type') || 'application/xml; charset=utf-8';
+    const { sMaxAge, swr } = cacheTtlFor(parsed);
     return new Response(text, {
       status: 200,
       headers: {
         'content-type': ct,
         'access-control-allow-origin': '*',
-        // 5 min fresh + 30 min stale (gives the user the requested ~10-min
-        // freshness without burning a Vercel cron quota)
-        'cache-control': 'public, s-maxage=300, stale-while-revalidate=1800',
+        // Default 5min fresh + 30min stale; per-host override above for
+        // low-velocity sources we only want to refetch twice a day.
+        'cache-control': `public, s-maxage=${sMaxAge}, stale-while-revalidate=${swr}`,
       },
     });
   } catch (e) {
