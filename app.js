@@ -684,6 +684,28 @@ function mergeAndDedupe(items) {
 }
 
 /**
+ * Limit each source's contribution in a date-sorted item list. Used on the
+ * ALL deck and the category tabs so a high-volume feed (DVIDS pushes ~20/day
+ * across all branches, DoJ press releases ~20/day across all USAOs) can't
+ * monopolize the front page. Caller is responsible for passing items already
+ * sorted newest-first — we walk in order and keep the first N per source.
+ *
+ * NOT applied to the SOURCES, US-GOV, or UAE-GOV tabs: the whole point of
+ * those views is to see one source's depth.
+ */
+function capPerSource(items, n) {
+  const counts = new Map();
+  const out = [];
+  for (const it of items) {
+    const c = counts.get(it.sourceId) || 0;
+    if (c >= n) continue;
+    counts.set(it.sourceId, c + 1);
+    out.push(it);
+  }
+  return out;
+}
+
+/**
  * Fire every source in parallel. Render incrementally as each completes so
  * the deck populates progressively rather than waiting for the slowest feed.
  */
@@ -3139,6 +3161,13 @@ function renderContent() {
     }
   } else if (activeTab !== 'all') {
     items = items.filter((i) => i.tags.includes(activeTab));
+  }
+
+  // Anti-flood: cap per-source on the ALL deck and category tabs (security,
+  // politics, economy, ai, tensions). Source-specific tabs above already
+  // returned, so anything reaching here that ISN'T uae-gov/us-gov gets capped.
+  if (!['uae-gov', 'us-gov'].includes(activeTab)) {
+    items = capPerSource(items, 8);
   }
 
   if (!items.length) {
