@@ -429,6 +429,7 @@ const state = {
   modalIdx: 0,
   usGovSubtab: 'potus',
   dowTheater: 'centcom',  // active theater under the DOW sub-tab
+  centcomRegion: 'all',   // active region under CENTCOM (third level)
 };
 
 /* ===== Hydrate from localStorage immediately so first paint shows data ===== */
@@ -3051,6 +3052,37 @@ const DOW_THEATERS = [
 const THEATER_PREFIX = {
   centcom: 'cc', eucom: 'eu', indopacom: 'ip', africom: 'af',
 };
+
+/* CENTCOM sub-regions — third-level chips visible only when CENTCOM is the
+ * active theater. Each region has a client-side regex applied to the item's
+ * title + summary so switching regions is instant (no refetch). */
+const CENTCOM_REGIONS = [
+  { id: 'all',         label: 'ALL',          sub: 'every CENTCOM item',          regex: null },
+  { id: 'iran',        label: 'IRAN',         sub: 'IRGC · Tehran · proxies',
+    regex: /\b(Iran|Iranian|IRGC|Tehran|Isfahan|Ahvaz|Bandar Abbas|Quds Force|Khamenei|Raisi|Pezeshkian)\b/i },
+  { id: 'iraq-syria',  label: 'IRAQ · SYRIA', sub: 'ISIS · Inherent Resolve',
+    regex: /\b(Iraq|Iraqi|Syria|Syrian|ISIS|ISIL|Daesh|Inherent Resolve|Baghdad|Damascus|Erbil|Al[- ]Tanf|At[- ]Tanf|SDF|Mosul|Raqqa)\b/i },
+  { id: 'yemen',       label: 'YEMEN',        sub: 'Houthi · Bab el-Mandeb',
+    regex: /\b(Yemen|Yemeni|Houthi|Ansarallah|Sana’a|Sanaa|Hodeidah|Aden|Prosperity Guardian|Bab el[- ]Mandeb)\b/i },
+  { id: 'gcc',         label: 'GCC',          sub: 'UAE · KSA · QA · BH · KW · OM',
+    regex: /\b(UAE|U\.A\.E|United Arab Emirates|Abu Dhabi|Dubai|Sharjah|Saudi|Saudi Arabia|Riyadh|Jeddah|Bahrain|Manama|NSA Bahrain|Qatar|Doha|Al Udeid|Kuwait|Camp Arifjan|Camp Buehring|Oman|Muscat|5th Fleet|Fifth Fleet|Arabian Gulf|Persian Gulf|GCC)\b/i },
+  { id: 'levant',      label: 'LEVANT',       sub: 'Israel · Lebanon · Jordan',
+    regex: /\b(Israel|Israeli|IDF|Tel Aviv|Jerusalem|Gaza|West Bank|Palestinian|Palestine|Hamas|Lebanon|Lebanese|Hezbollah|Beirut|Jordan|Jordanian|Amman)\b/i },
+  { id: 'afghanistan', label: 'AFGHANISTAN',  sub: 'Taliban · Kabul · Khorasan',
+    regex: /\b(Afghanistan|Afghan|Taliban|Kabul|Kandahar|Khorasan|ISIS-K|ISKP)\b/i },
+];
+function renderCentcomRegionStrip(active) {
+  return `
+    <div class="region-strip" id="centcom-region-strip">
+      ${CENTCOM_REGIONS.map((r) =>
+        `<button class="region-chip${r.id === active ? ' active' : ''}" data-region="${r.id}" title="${escapeHtml(r.sub)}">
+           <span class="rc-l">${escapeHtml(r.label)}</span>
+           <span class="rc-s">${escapeHtml(r.sub)}</span>
+         </button>`
+      ).join('')}
+    </div>
+  `;
+}
 function renderDowTheaterStrip(active) {
   return `
     <div class="theater-strip" id="dow-theater-strip">
@@ -3244,14 +3276,29 @@ function renderContent() {
     // Non-DVIDS DOW sources (war.gov RSS) stay visible across all theaters.
     if (subId === 'war') {
       const theater = state.dowTheater || 'centcom';
-      const theaterPrefix = renderDowTheaterStrip(theater);
-      const dvidsCount = items.reduce((acc, it) => acc + (it.sourceId.startsWith('dvids-') ? 1 : 0), 0);
+      prefix += renderDowTheaterStrip(theater);
       items = items.filter((it) => {
         if (!it.sourceId.startsWith('dvids-')) return true;            // keep non-DVIDS DoW items
         return it.sourceId.startsWith(`dvids-${THEATER_PREFIX[theater]}`);
       });
-      prefix += theaterPrefix;
-      // (Falls through to common renderer below — items are now theater-filtered.)
+
+      // CENTCOM third-level: sub-region strip + client-side region filter.
+      // Only relevant when CENTCOM is the active theater. Items get filtered
+      // by their title+summary against the region's regex; ALL is a no-op.
+      // war.gov items are NOT region-filtered — they're theater-agnostic press.
+      if (theater === 'centcom') {
+        const regionId = state.centcomRegion || 'all';
+        prefix += renderCentcomRegionStrip(regionId);
+        const region = CENTCOM_REGIONS.find((r) => r.id === regionId);
+        if (region?.regex) {
+          items = items.filter((it) => {
+            if (!it.sourceId.startsWith('dvids-')) return true;          // keep war.gov
+            const blob = `${it.title || ''} ${it.summary || ''}`;
+            return region.regex.test(blob);
+          });
+        }
+      }
+      // (Falls through to common renderer below — items are now filtered.)
     }
   } else if (activeTab !== 'all') {
     items = items.filter((i) => i.tags.includes(activeTab));
@@ -3511,12 +3558,24 @@ function bindContentClicks() {
     const id = btn.dataset.theater;
     if (!id) return;
     state.dowTheater = id;
+    // Switching theaters resets sub-region to ALL (region is CENTCOM-specific)
+    state.centcomRegion = 'all';
+    renderContent();
+    return true;
+  };
+  const regionHandler = (e) => {
+    const btn = e.target.closest('.region-chip');
+    if (!btn) return;
+    const id = btn.dataset.region;
+    if (!id) return;
+    state.centcomRegion = id;
     renderContent();
     return true;
   };
   const handler = (e) => {
     if (subtabHandler(e)) return;
     if (theaterHandler(e)) return;
+    if (regionHandler(e)) return;
     const art = e.target.closest('article.item');
     if (!art) return;
     // Don't hijack actual tag clicks etc — only the title link / article body
