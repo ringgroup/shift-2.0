@@ -61,8 +61,8 @@ const FEED_URLS = [
   'https://www.whitehouse.gov/feed/',
   'https://news.google.com/rss/search?q=site:state.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20',
-  'https://www.dvidshub.net/rss/news',
-  'https://www.dvidshub.net/rss/image',
+  '/api/dvids?type=news',
+  '/api/dvids?type=image',
   'https://www.energy.gov/rss.xml',
   'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',
   'https://www.justice.gov/feeds/justice-news.xml',
@@ -112,7 +112,12 @@ export default async function handler(request) {
     await Promise.allSettled(
       bucket.map(async (feed) => {
         try {
-          const r = await fetch(`${origin}/api/news?url=${encodeURIComponent(feed)}`, { cache: 'no-store' });
+          // Relative paths (e.g. "/api/dvids?type=image") are our own
+          // endpoints — hit them directly, not through /api/news.
+          const target = feed.startsWith('/')
+            ? `${origin}${feed}`
+            : `${origin}/api/news?url=${encodeURIComponent(feed)}`;
+          const r = await fetch(target, { cache: 'no-store' });
           if (r.ok) status.warm++;
           else status.fail++;
         } catch { status.fail++; }

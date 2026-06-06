@@ -151,8 +151,11 @@ const SOURCES = [
   { id: 'dos',       name: 'DoS State Dept',  url: 'https://news.google.com/rss/search?q=site:state.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'dos-pr',    name: 'DoS press',       url: 'https://news.google.com/rss/search?q=site:state.gov+press+OR+release&when:2d&hl=en-US&gl=US&ceid=US:en',                                          region: 'US-GOV', lang: 'en' },
   { id: 'dow',       name: 'DoW War Dept',    url: 'https://www.war.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=20',                                                            region: 'US-GOV', lang: 'en' },
-  { id: 'dvids',     name: 'DVIDS · DoW',     url: 'https://www.dvidshub.net/rss/news',                                                                                                              region: 'US-GOV', lang: 'en' },
-  { id: 'dvids-img', name: 'DVIDS · Imagery', url: 'https://www.dvidshub.net/rss/image',                                                                                                             region: 'US-GOV', lang: 'en' },
+  // DVIDS firehose is 400+ items/day, 99% stateside National Guard. We
+  // filter to CENTCOM/MENA-relevant items server-side in /api/dvids before
+  // they ever reach the deck. See api/dvids.js for the keyword regex.
+  { id: 'dvids',     name: 'DVIDS · CENTCOM',         url: '/api/dvids?type=news',  region: 'US-GOV', lang: 'en' },
+  { id: 'dvids-img', name: 'DVIDS · CENTCOM imagery', url: '/api/dvids?type=image', region: 'US-GOV', lang: 'en' },
   { id: 'doe',       name: 'DoE Energy',      url: 'https://www.energy.gov/rss.xml',                                                                                                                  region: 'US-GOV', lang: 'en' },
   { id: 'doe-news',  name: 'DoE via news',    url: 'https://news.google.com/rss/search?q=site:energy.gov&when:2d&hl=en-US&gl=US&ceid=US:en',                                                          region: 'US-GOV', lang: 'en' },
   { id: 'doj',       name: 'DoJ Justice',     url: 'https://www.justice.gov/feeds/justice-news.xml',                                                                                                  region: 'US-GOV', lang: 'en' },
