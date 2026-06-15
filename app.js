@@ -447,6 +447,24 @@ const state = {
 };
 
 /* ===== Hydrate from localStorage immediately so first paint shows data ===== */
+/**
+ * Re-apply current noise filters to a hydrated item. The filters in parseRSS
+ * only run on fresh fetches — but items in localStorage were ingested under
+ * older rules and persist across deploys. Without this, stale junk (DoJ
+ * future-dated calendar events, /oip/event/ FOIA trainings, anything dated
+ * >72h ahead) survives indefinitely once cached. Mirrors parseRSS exactly.
+ */
+function isHydratedItemAllowed(it) {
+  if (!it || !it.date) return true;
+  const ms = it.date instanceof Date ? it.date.getTime() : new Date(it.date).getTime();
+  if (Number.isNaN(ms)) return true;
+  const drift = ms - Date.now();
+  if (drift > 72 * 3600 * 1000) return false;
+  if (it.sourceId === 'doj' && drift > 0) return false;
+  if (it.sourceId === 'doj' && /\/(?:event|oip\/event)\//i.test(it.link || '')) return false;
+  return true;
+}
+
 (function hydrate() {
   const news    = cacheGet('news',    null);
   const markets = cacheGet('markets', null);
@@ -454,7 +472,11 @@ const state = {
   const crypto  = cacheGet('crypto',  null);
   const tens    = cacheGet('tensions',null);
   const not     = cacheGet('notams',  null);
-  if (news?.value)    state.items   = (news.value || []).map((it) => ({ ...it, date: new Date(it.date) }));
+  if (news?.value) {
+    state.items = (news.value || [])
+      .map((it) => ({ ...it, date: new Date(it.date) }))
+      .filter(isHydratedItemAllowed);
+  }
   if (markets?.value) state.markets = markets.value;
   if (fx?.value)      state.fx      = fx.value;
   if (crypto?.value)  state.crypto  = crypto.value;
