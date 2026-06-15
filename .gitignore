@@ -7,3 +7,11 @@ node_modules/
 .vscode/
 .vercel
 .claude/
+
+# Local dev / experimental — not part of SHIFT
+logo-src.jpg
+make_seed.py
+process_logo.py
+prometheus-seed-data.xlsx
+prometheus-tracer/
+package-lock.json
