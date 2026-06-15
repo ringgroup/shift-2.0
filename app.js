@@ -125,8 +125,8 @@ const SOURCES = [
   { id: 'nyt-bus',   name: 'NYT Business',    url: 'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml',region: 'US',   lang: 'en' },
   { id: 'wsj-mkt',   name: 'WSJ Markets',     url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',            region: 'US',   lang: 'en' },
   { id: 'wsj-world', name: 'WSJ World',       url: 'https://feeds.a.dj.com/rss/RSSWorldNews.xml',              region: 'US',   lang: 'en' },
-  { id: 'cnn-top',   name: 'CNN Top',         url: 'http://rss.cnn.com/rss/cnn_topstories.rss',                region: 'US',   lang: 'en' },
-  { id: 'cnn-world', name: 'CNN World',       url: 'http://rss.cnn.com/rss/cnn_world.rss',                     region: 'US',   lang: 'en' },
+  // CNN RSS is dead — every item dates to April 2023, three years stale.
+  // Removed. Use Google News site:cnn.com if you ever want it back.
   { id: 'bbg',       name: 'Bloomberg',       url: 'https://news.google.com/rss/search?q=site:bloomberg.com&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'US', lang: 'en' },
   { id: 'reuters-us',name: 'Reuters US',      url: 'https://news.google.com/rss/search?q=site:reuters.com+(US+OR+Fed+OR+%22White+House%22+OR+Congress)&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'US', lang: 'en' },
   { id: 'ap',        name: 'AP News',         url: 'https://news.google.com/rss/search?q=site:apnews.com&when:1d&hl=en-US&gl=US&ceid=US:en', region: 'US', lang: 'en' },
@@ -462,6 +462,8 @@ function isHydratedItemAllowed(it) {
   if (drift > 72 * 3600 * 1000) return false;
   if (it.sourceId === 'doj' && drift > 0) return false;
   if (it.sourceId === 'doj' && /\/(?:event|oip\/event)\//i.test(it.link || '')) return false;
+  // Source removed but cached items might persist — purge cnn-* on hydrate.
+  if (it.sourceId === 'cnn-top' || it.sourceId === 'cnn-world') return false;
   return true;
 }
 

@@ -31,8 +31,7 @@ const FEED_URLS = [
   'https://rss.nytimes.com/services/xml/rss/nyt/Business.xml',
   'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
   'https://feeds.a.dj.com/rss/RSSWorldNews.xml',
-  'http://rss.cnn.com/rss/cnn_topstories.rss',
-  'http://rss.cnn.com/rss/cnn_world.rss',
+  // CNN RSS dead (items frozen at April 2023) — removed
   'https://api.axios.com/feed/',
   // Multilateral
   'https://www.who.int/rss-feeds/news-english.xml',
